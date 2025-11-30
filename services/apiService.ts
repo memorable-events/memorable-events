@@ -2,6 +2,11 @@
 import { ContentResponse, LoginResponse } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+console.log("API URL:", API_BASE_URL); // Debug log
+// Temporary debug: check if URL is correct
+if (typeof window !== 'undefined' && !window.location.host.includes('localhost')) {
+    // alert(`Debug: API URL is ${API_BASE_URL}`); 
+}
 
 const getHeaders = () => {
     const token = sessionStorage.getItem('admin_token');
