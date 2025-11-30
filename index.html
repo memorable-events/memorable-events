@@ -132,49 +132,7 @@
 
 <body>
   <div class="bg-noise"></div>
-  <div id="root" class="flex flex-col items-center justify-center min-h-screen text-white font-mono p-4">
-    <div id="loading-text" class="text-xl">Loading...</div>
-    <div id="error-log" class="mt-4 text-red-500 text-sm whitespace-pre-wrap hidden"></div>
-  </div>
-
-  <script>
-    // 1. Global Error Handler
-    window.onerror = function (msg, url, line, col, error) {
-      document.getElementById('loading-text').innerText = "Error Detected:";
-      const log = document.getElementById('error-log');
-      log.classList.remove('hidden');
-      log.innerText += `\n[JS Error] ${msg}\n${url}:${line}:${col}\n${error?.stack || ''}\n`;
-    };
-
-    // 2. Promise Rejection Handler
-    window.onunhandledrejection = function (e) {
-      document.getElementById('loading-text').innerText = "Error Detected:";
-      const log = document.getElementById('error-log');
-      log.classList.remove('hidden');
-      log.innerText += `\n[Promise Error] ${e.reason}\n`;
-    };
-
-    // 3. Resource Load Error (e.g. script 404) - Capture phase
-    window.addEventListener('error', function (e) {
-      if (e.target.tagName === 'SCRIPT' || e.target.tagName === 'LINK') {
-        document.getElementById('loading-text').innerText = "Error Detected:";
-        const log = document.getElementById('error-log');
-        log.classList.remove('hidden');
-        log.innerText += `\n[Resource Error] Failed to load: ${e.target.src || e.target.href}\n`;
-      }
-    }, true);
-
-    // 4. Timeout Fallback
-    setTimeout(() => {
-      const root = document.getElementById('root');
-      if (root && root.innerText.includes('Loading...')) {
-        document.getElementById('loading-text').innerText = "Timeout: App failed to start.";
-        const log = document.getElementById('error-log');
-        log.classList.remove('hidden');
-        log.innerText += "\nThe React app took too long to mount. Check console for details.";
-      }
-    }, 5000);
-  </script>
+  <div id="root"></div>
   <script type="module" src="/index.tsx"></script>
 </body>
 

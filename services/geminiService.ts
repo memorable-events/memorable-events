@@ -1,11 +1,29 @@
 import { GoogleGenAI } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+let ai: GoogleGenAI | null = null;
+
+try {
+  if (process.env.API_KEY) {
+    ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  } else {
+    console.warn("Gemini API Key is missing. AI features will be disabled.");
+  }
+} catch (error) {
+  console.error("Failed to initialize Gemini AI:", error);
+}
+
+export { ai };
 
 export const generateEventDescription = async (title: string): Promise<string> => {
   if (!process.env.API_KEY) {
     console.warn("API Key not found, returning mock data");
     return "Experience an unforgettable evening with us. (API Key missing)";
+  }
+
+  // Check if ai is initialized before using it
+  if (!ai) {
+    console.warn("AI not initialized, returning mock data for description.");
+    return "Experience an unforgettable evening with us. (AI not initialized)";
   }
 
   try {
@@ -21,16 +39,16 @@ export const generateEventDescription = async (title: string): Promise<string> =
 };
 
 export const generateEventIdeas = async (category: string): Promise<string[]> => {
-    if (!process.env.API_KEY) return ["Music Festival", "Tech Conference", "Art Workshop"];
-    
-    try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: `List 3 creative event names for the category: ${category}. Return only the names separated by commas.`,
-        });
-        const text = response.text || "";
-        return text.split(',').map(s => s.trim());
-    } catch (e) {
-        return ["Networking Mixer", "Product Launch", "Charity Gala"];
-    }
+  if (!process.env.API_KEY) return ["Music Festival", "Tech Conference", "Art Workshop"];
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: `List 3 creative event names for the category: ${category}. Return only the names separated by commas.`,
+    });
+    const text = response.text || "";
+    return text.split(',').map(s => s.trim());
+  } catch (e) {
+    return ["Networking Mixer", "Product Launch", "Charity Gala"];
+  }
 }
