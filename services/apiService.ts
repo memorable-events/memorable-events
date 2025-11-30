@@ -85,7 +85,15 @@ export const api = {
         });
 
         if (!response.ok) {
-            throw new Error('Upload failed');
+            const errorText = await response.text();
+            let errorMessage = 'Upload failed';
+            try {
+                const errorJson = JSON.parse(errorText);
+                if (errorJson.error) errorMessage = errorJson.error;
+            } catch (e) {
+                errorMessage = `Upload failed: ${response.status} ${response.statusText}`;
+            }
+            throw new Error(errorMessage);
         }
         const data = await response.json();
         return data.url;

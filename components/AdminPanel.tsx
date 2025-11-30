@@ -82,8 +82,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose, content, actio
                     // Actually, let's just assume the file input is next to the image/thumbnail field
                     const targetField = resource === 'reels' ? 'thumbnail' : 'image';
                     setFormData({ ...formData, [targetField]: url });
-                } catch (error) {
-                    alert("Upload failed. Check API key or network.");
+                } catch (error: any) {
+                    alert(`Upload failed: ${error.message}`);
                 } finally {
                     setUploading(false);
                 }
