@@ -100,10 +100,8 @@ def create_app():
 	app = Flask(__name__)
 	app.config["SECRET_KEY"] = SECRET_KEY
 	# Allow frontend origins and Authorization header for JWT auth
-	CORS(app,
-		 resources={r"/api/*": {"origins": ["http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:5173"]}},
-		 supports_credentials=True,
-		 allow_headers=["Content-Type", "Authorization"])
+	# Allow frontend origins and Authorization header for JWT auth
+	CORS(app, resources={r"/api/*": {"origins": "*"}}, allow_headers=["Content-Type", "Authorization"])
 
 	# Initialize Cloudinary
 	cloudinary.config(
