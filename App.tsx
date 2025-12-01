@@ -263,7 +263,7 @@ function App() {
 
       <footer className="w-full border-t border-white/5 bg-zinc-950 pt-16 pb-12">
         <div className="max-w-7xl mx-auto px-6 text-center">
-          <h3 className="font-serif italic text-2xl text-white mb-6">Event.me</h3>
+          <h3 className="font-serif italic text-2xl text-white mb-6">Memorable Event</h3>
           <div className="flex justify-center gap-8 mb-8 text-xs text-zinc-500 uppercase tracking-widest">
             <a href="#services" className="hover:text-white transition-colors">Services</a>
             <a href="#pricing" className="hover:text-white transition-colors">Plans</a>
@@ -272,7 +272,7 @@ function App() {
             <a href="#contact" className="hover:text-white transition-colors">Contact</a>
           </div>
           <p className="text-zinc-700 text-[10px] uppercase tracking-widest">
-            Event.me © 2024 · Designed by Dhruv · <button onClick={() => setActiveModal(ModalType.ADMIN_LOGIN)} className="hover:text-white transition-colors">Admin</button>
+            Memorable Event © 2025 · Designed by <a href="https://github.com/Jaybhatt-Github">Jay</a> · <button onClick={() => setActiveModal(ModalType.ADMIN_LOGIN)} className="hover:text-white transition-colors">Admin</button>
           </p>
         </div>
       </footer>
