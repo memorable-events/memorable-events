@@ -175,7 +175,7 @@ const InquirySection: React.FC = () => {
       {/* Map Section */}
       <div className="mt-12 rounded-[3rem] overflow-hidden border border-white/10 shadow-2xl h-[400px] relative z-10 group">
         <iframe
-          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3770.792377236968!2d72.87765531490113!3d19.07609098708791!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3be7c87c0e8f0e35%3A0x2984606703c6258b!2sMumbai%2C%20Maharashtra!5e0!3m2!1sen!2sin!4v1633000000000!5m2!1sen!2sin"
+          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3771.5692083849617!2d72.8636704749764!3d19.038695382158295!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3be7c90f03ca9bd1%3A0x3fc447dd0e976e13!2sMEMORABLE%20PARTY%20ZONE!5e0!3m2!1sen!2sin!4v1764600052225!5m2!1sen!2sin"
           width="100%"
           height="100%"
           style={{ border: 0 }}

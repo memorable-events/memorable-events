@@ -1,6 +1,6 @@
 # Deployment Guide
 
-This guide will help you deploy your **Event.me** website for free.
+This guide will help you deploy your **memorable events** website for free.
 
 ## Architecture
 - **Frontend (React)**: Deployed on **Vercel** (Fast, free, and designed for Vite apps).

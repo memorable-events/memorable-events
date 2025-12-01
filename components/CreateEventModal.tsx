@@ -54,7 +54,7 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onClose }) 
                     </div>
                     <div className="relative z-10 mt-12 md:mt-0">
                         <div className="text-[10px] uppercase tracking-widest text-zinc-600 mb-2">Powered by</div>
-                        <div className="font-semibold text-zinc-400">Event.me</div>
+                        <div className="font-semibold text-zinc-400">Memorable Events</div>
                     </div>
                 </div>
 
