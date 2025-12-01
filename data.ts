@@ -6,7 +6,6 @@ export const DEFAULT_INDOOR_DECORATIONS: Service[] = [
   { id: 1, title: "Birthday Party", category: "Celebration", description: "Vibrant and fun setups to make any birthday special.", image: "https://images.unsplash.com/photo-1560513045-53531a6174a8?q=80&w=800&auto=format&fit=crop" },
   { id: 2, title: "Anniversary", category: "Romance", description: "Elegant and romantic decor to celebrate your milestone.", image: "https://images.unsplash.com/photo-1616134358604-a852033c489c?q=80&w=800&auto=format&fit=crop" },
   { id: 3, title: "Bride to Be", category: "Pre-Wedding", description: "Chic and stylish setups for the perfect bridal shower.", image: "https://images.unsplash.com/photo-1594901535458-7104a3a609cf?q=80&w=800&auto=format&fit=crop" },
-  { id: 5, title: "Get Together", category: "Casual", description: "Relaxed and cozy setups for friends and family.", image: "https://images.unsplash.com/photo-1578344913210-9095655b3a36?q=80&w=800&auto=format&fit=crop" },
   { id: 6, title: "Movie Date", category: "Intimate", description: "A private cinema experience with plush seating and snacks.", image: "https://images.unsplash.com/photo-1620177088257-c335e2b0773b?q=80&w=800&auto=format&fit=crop" }
 ];
 
@@ -111,6 +110,6 @@ export const DEFAULT_ADDONS: AddOn[] = [
   { id: 3, name: "Balloon Color Customization", price: "₹500", type: "checkbox" },
   { id: 4, name: "1/2 KG Cake", price: "₹500", type: "quantity" },
   { id: 5, name: "1 KG Cake", price: "₹1000", type: "quantity" },
-  { id: 6, name: "Cold Pyro", price: "₹800", type: "quantity" },
-  { id: 7, name: "Photography", price: "₹2500", type: "checkbox" }
+  { id: 7, name: "Mobile Photography / Videography", price: "₹1000", type: "checkbox" },
+  { id: 8, name: "Camera Photography", price: "₹3000", type: "checkbox" }
 ];

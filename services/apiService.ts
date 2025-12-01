@@ -118,7 +118,7 @@ export const api = {
         return res.json();
     },
 
-    sendInquiry: async (data: { name: string; email: string; type: string; message: string }) => {
+    sendInquiry: async (data: { name: string; date: string; contactNumber: string; indoorOutdoor: string; type: string; message: string }) => {
         const response = await fetch(`${API_BASE_URL}/inquiry`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -135,6 +135,35 @@ export const api = {
             body: JSON.stringify(settings)
         });
         if (!response.ok) throw new Error('Failed to update settings');
+        return response.json();
+    },
+
+    fetchBookings: async (date?: string) => {
+        const url = date ? `${API_BASE_URL}/bookings?date=${date}` : `${API_BASE_URL}/bookings`;
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Failed to fetch bookings');
+        return response.json();
+    },
+
+    createBooking: async (date: string, time_slot: string) => {
+        const response = await fetch(`${API_BASE_URL}/bookings`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify({ date, time_slot })
+        });
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to create booking');
+        }
+        return response.json();
+    },
+
+    deleteBooking: async (id: number) => {
+        const response = await fetch(`${API_BASE_URL}/bookings/${id}`, {
+            method: 'DELETE',
+            headers: getHeaders()
+        });
+        if (!response.ok) throw new Error('Failed to delete booking');
         return response.json();
     }
 };

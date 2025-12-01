@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { X, Plus, Trash2, Edit, Save } from 'lucide-react';
+import { X, Plus, Trash2, Edit, Save, Minus } from 'lucide-react';
 import { Service, Plan, Cake, GalleryItem, RealReel, SetupImage, AddOn } from '../types';
 import { api } from '../services/apiService';
+import TimePicker from './TimePicker';
 
 interface AdminPanelProps {
     isOpen: boolean;
@@ -25,12 +26,42 @@ interface AdminPanelProps {
     };
 }
 
-type Tab = 'decorations' | 'plans' | 'cakes' | 'gallery' | 'reels' | 'addons' | 'general';
+type Tab = 'decorations' | 'plans' | 'cakes' | 'gallery' | 'reels' | 'addons' | 'bookings' | 'general';
 
 const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose, content, actions }) => {
     const [activeTab, setActiveTab] = useState<Tab>('decorations');
     const [editingItem, setEditingItem] = useState<{ resource: string, item: any } | null>(null);
     const [isCreating, setIsCreating] = useState<string | null>(null);
+
+    // Booking State
+    const [currentMonth, setCurrentMonth] = useState(new Date());
+    const [selectedDate, setSelectedDate] = useState<string>('');
+    const [bookings, setBookings] = useState<any[]>([]);
+    const [customStart, setCustomStart] = useState<string>('');
+    const [customEnd, setCustomEnd] = useState<string>('');
+
+    React.useEffect(() => {
+        if (selectedDate && activeTab === 'bookings') {
+            api.fetchBookings(selectedDate).then(setBookings).catch(console.error);
+        }
+    }, [selectedDate, activeTab]);
+
+    const handleToggleSlot = async (slot: string) => {
+        if (!selectedDate) return;
+        const booking = bookings.find(b => b.time_slot === slot);
+        try {
+            if (booking) {
+                await api.deleteBooking(booking.id);
+            } else {
+                await api.createBooking(selectedDate, slot);
+            }
+            // Refresh
+            const updated = await api.fetchBookings(selectedDate);
+            setBookings(updated);
+        } catch (error) {
+            alert("Failed to update slot");
+        }
+    };
 
     if (!isOpen) return null;
 
@@ -372,7 +403,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose, content, actio
                         <p className="text-zinc-400 text-sm uppercase tracking-widest">Website Content Management</p>
                     </div>
                     <div className="flex items-center p-1 bg-black/20 rounded-full border border-white/5 overflow-x-auto">
-                        {(['decorations', 'plans', 'cakes', 'gallery', 'reels', 'addons', 'general'] as Tab[]).map(tab => (
+                        {(['decorations', 'plans', 'cakes', 'gallery', 'reels', 'addons', 'bookings', 'general'] as Tab[]).map(tab => (
                             <button key={tab} onClick={() => setActiveTab(tab)} className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${activeTab === tab ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-white'}`}>{tab}</button>
                         ))}
                     </div>
@@ -561,6 +592,125 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose, content, actio
                                         </div>
                                     </div>
                                 ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Bookings Tab */}
+                    {activeTab === 'bookings' && (
+                        <div className="bg-zinc-900/50 p-6 rounded-2xl border border-white/5 space-y-6">
+                            <div className="flex justify-between items-center">
+                                <h4 className="font-bold text-zinc-300 uppercase tracking-wider">Manage Availability</h4>
+                                <div className="text-xs text-zinc-500">Block or unblock time slots</div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                {/* Calendar */}
+                                <div className="bg-zinc-950 p-4 rounded-xl border border-zinc-800">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h4 className="text-white font-bold text-sm uppercase tracking-wider">
+                                            {currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
+                                        </h4>
+                                        <div className="flex gap-2">
+                                            <button onClick={() => setCurrentMonth(new Date(currentMonth.setMonth(currentMonth.getMonth() - 1)))} className="p-1 text-zinc-400 hover:text-white"><Minus size={16} /></button>
+                                            <button onClick={() => setCurrentMonth(new Date(currentMonth.setMonth(currentMonth.getMonth() + 1)))} className="p-1 text-zinc-400 hover:text-white"><Plus size={16} /></button>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-7 gap-1 text-center mb-2">
+                                        {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => (
+                                            <div key={d} className="text-xs text-zinc-500 font-bold">{d}</div>
+                                        ))}
+                                    </div>
+                                    <div className="grid grid-cols-7 gap-1">
+                                        {(() => {
+                                            const year = currentMonth.getFullYear();
+                                            const month = currentMonth.getMonth();
+                                            const firstDay = new Date(year, month, 1);
+                                            const lastDay = new Date(year, month + 1, 0);
+                                            const daysInMonth = lastDay.getDate();
+                                            const startingDay = firstDay.getDay();
+
+                                            const days = [];
+                                            for (let i = 0; i < startingDay; i++) {
+                                                days.push(<div key={`empty-${i}`} className="p-2"></div>);
+                                            }
+                                            for (let i = 1; i <= daysInMonth; i++) {
+                                                const date = new Date(year, month, i);
+                                                const dateString = date.toISOString().split('T')[0];
+                                                const isSelected = selectedDate === dateString;
+                                                const isPast = date < new Date(new Date().setHours(0, 0, 0, 0));
+
+                                                days.push(
+                                                    <button
+                                                        key={i}
+                                                        onClick={() => setSelectedDate(dateString)}
+                                                        className={`p-2 rounded-lg text-sm font-medium transition-colors ${isSelected ? 'bg-brand-primary text-black' : isPast ? 'text-zinc-600' : 'text-zinc-300 hover:bg-zinc-800'}`}
+                                                    >
+                                                        {i}
+                                                    </button>
+                                                );
+                                            }
+                                            return days;
+                                        })()}
+                                    </div>
+                                </div>
+
+                                {/* Time Slots */}
+                                <div>
+                                    <h4 className="text-white font-bold text-sm uppercase tracking-wider mb-3">
+                                        {selectedDate ? `Slots for ${selectedDate}` : 'Select a date'}
+                                    </h4>
+                                    {selectedDate ? (
+                                        <div className="space-y-6">
+                                            {/* Custom Block */}
+                                            <div className="bg-zinc-950 p-4 rounded-xl border border-zinc-800">
+                                                <h5 className="text-zinc-400 text-xs font-bold uppercase mb-3">Block Custom Range</h5>
+                                                <div className="flex gap-2 mb-3">
+                                                    <TimePicker
+                                                        label="Start Time"
+                                                        value={customStart}
+                                                        onChange={setCustomStart}
+                                                    />
+                                                    <TimePicker
+                                                        label="End Time"
+                                                        value={customEnd}
+                                                        onChange={setCustomEnd}
+                                                    />
+                                                </div>
+                                                <button
+                                                    onClick={() => {
+                                                        if (customStart && customEnd) {
+                                                            handleToggleSlot(`${customStart} - ${customEnd}`);
+                                                            setCustomStart('');
+                                                            setCustomEnd('');
+                                                        } else {
+                                                            alert("Please select both start and end times");
+                                                        }
+                                                    }}
+                                                    className="w-full py-2 bg-red-900/30 text-red-400 border border-red-900/50 rounded-lg text-sm font-bold hover:bg-red-900/50 transition-colors"
+                                                >
+                                                    Block Range
+                                                </button>
+                                            </div>
+
+                                            {/* List Blocks */}
+                                            <div className="space-y-2">
+                                                <h5 className="text-zinc-400 text-xs font-bold uppercase">Blocked Slots</h5>
+                                                {bookings.map(b => (
+                                                    <div key={b.id} className="flex justify-between items-center p-3 bg-red-900/10 border border-red-900/30 rounded-lg">
+                                                        <span className="text-red-400 text-sm font-bold">{b.time_slot}</span>
+                                                        <button onClick={() => handleToggleSlot(b.time_slot)} className="p-1 text-red-400 hover:text-white"><Trash2 size={14} /></button>
+                                                    </div>
+                                                ))}
+                                                {bookings.length === 0 && (
+                                                    <p className="text-zinc-600 text-xs italic">No slots blocked for this date.</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="text-zinc-500 text-sm italic">Select a date to manage slots.</div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     )}

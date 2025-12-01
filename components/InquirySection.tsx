@@ -8,7 +8,7 @@ const InquirySection: React.FC = () => {
   const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
   const [formData, setFormData] = useState({
     name: '',
-    email: '',
+    date: '',
     contactNumber: '',
     indoorOutdoor: '',
     type: '',
@@ -25,7 +25,7 @@ const InquirySection: React.FC = () => {
     try {
       await api.sendInquiry(formData);
       setStatus('success');
-      setFormData({ name: '', email: '', type: '', message: '' });
+      setFormData({ name: '', date: '', contactNumber: '', indoorOutdoor: '', type: '', message: '' });
       setTimeout(() => setStatus('idle'), 3000);
     } catch (error) {
       console.error(error);
@@ -73,13 +73,6 @@ const InquirySection: React.FC = () => {
               </div>
 
               <div className="flex items-start gap-5 group cursor-pointer">
-                <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-zinc-400 group-hover:bg-white group-hover:text-black transition-all duration-300">
-                  <MessageSquare size={20} />
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-1">Live Chat</h4>
-                  <p className="text-sm text-zinc-300 group-hover:text-white transition-colors font-medium">Available 9am - 6pm EST</p>
-                </div>
               </div>
             </div>
           </div>
@@ -124,18 +117,17 @@ const InquirySection: React.FC = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="group space-y-2">
-                  <label className={`text-[10px] font-bold uppercase tracking-wider transition-colors duration-300 ${focusedField === 'email' ? 'text-brand-primary' : 'text-zinc-500'}`}>
-                    Email Address
+                  <label className={`text-[10px] font-bold uppercase tracking-wider transition-colors duration-300 ${focusedField === 'date' ? 'text-brand-primary' : 'text-zinc-500'}`}>
+                    Event Date
                   </label>
                   <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
+                    type="date"
+                    name="date"
+                    value={formData.date}
                     onChange={handleChange}
-                    placeholder="jane@example.com"
-                    onFocus={() => setFocusedField('email')}
+                    onFocus={() => setFocusedField('date')}
                     onBlur={() => setFocusedField(null)}
-                    className="w-full bg-transparent border-b border-white/10 py-4 text-base md:text-sm text-white placeholder-zinc-800 focus:outline-none focus:border-brand-primary transition-all"
+                    className="w-full bg-transparent border-b border-white/10 py-4 text-base md:text-sm text-white placeholder-zinc-800 focus:outline-none focus:border-brand-primary transition-all [&::-webkit-calendar-picker-indicator]:invert"
                     required
                   />
                 </div>

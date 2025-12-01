@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, ArrowRight, ShoppingCart, Plus, Minus } from 'lucide-react';
 import { Service, Plan, SetupImage, AddOn } from '../types';
 import { api } from '../services/apiService';
+import TimePicker from './TimePicker';
 
 interface BookingModalProps {
     isOpen: boolean;
@@ -23,9 +24,21 @@ const CheckIcon = ({ size = 12 }: { size?: number }) => (
 
 const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, selection, addons }) => {
     const [selectedAddons, setSelectedAddons] = useState<Record<number, number>>({});
-    const [step, setStep] = useState<'addons' | 'details'>('addons');
+    const [step, setStep] = useState<'addons' | 'schedule' | 'details'>('addons');
     const [userDetails, setUserDetails] = useState({ name: '', phone: '', date: '' });
+    const [selectedDate, setSelectedDate] = useState<string>('');
+    const [selectedTime, setSelectedTime] = useState<string>('');
+    const [blockedSlots, setBlockedSlots] = useState<string[]>([]);
     const [submitting, setSubmitting] = useState(false);
+    const [currentMonth, setCurrentMonth] = useState(new Date());
+
+    React.useEffect(() => {
+        if (selectedDate) {
+            api.fetchBookings(selectedDate).then(bookings => {
+                setBlockedSlots(bookings.map((b: any) => b.time_slot));
+            }).catch(console.error);
+        }
+    }, [selectedDate]);
 
     if (!isOpen) return null;
 
@@ -44,8 +57,58 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, selection,
         });
     };
 
+    const parseTime = (timeStr: string) => {
+        const [time, modifier] = timeStr.split(' ');
+        let [hours, minutes] = time.split(':').map(Number);
+        if (modifier === 'PM' && hours < 12) hours += 12;
+        if (modifier === 'AM' && hours === 12) hours = 0;
+        return hours * 60 + minutes;
+    };
+
+    const isOverlapping = (start1: number, end1: number, start2: number, end2: number) => {
+        return Math.max(start1, start2) < Math.min(end1, end2);
+    };
+
+    const checkOverlap = () => {
+        if (!selectedTime || !selectedTime.includes(' - ')) return false;
+        const [startStr, endStr] = selectedTime.split(' - ');
+        if (!startStr || !endStr) return false;
+
+        const start = parseTime(startStr);
+        const end = parseTime(endStr);
+
+        return blockedSlots.some(slot => {
+            const [sStr, eStr] = slot.split(' - ');
+            const s = parseTime(sStr);
+            const e = parseTime(eStr);
+            return isOverlapping(start, end, s, e);
+        });
+    };
+
+    const checkInvalidRange = () => {
+        if (!selectedTime || !selectedTime.includes(' - ')) return false;
+        const [startStr, endStr] = selectedTime.split(' - ');
+        if (!startStr || !endStr) return false;
+
+        const start = parseTime(startStr);
+        const end = parseTime(endStr);
+
+        return start >= end;
+    };
+
+    const hasOverlap = checkOverlap();
+    const isInvalidRange = checkInvalidRange();
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (hasOverlap) {
+            alert("The selected time slot overlaps with an existing booking. Please choose a different time.");
+            return;
+        }
+        if (isInvalidRange) {
+            alert("End time must be after start time.");
+            return;
+        }
         setSubmitting(true);
 
         const addonSummary = Object.entries(selectedAddons).map(([id, qty]) => {
@@ -60,11 +123,12 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, selection,
 *Setup:* ${selection.setup?.title || 'General'}
 *Plan:* ${selection.plan.name}
 *Add-ons:* ${addonSummary || 'None'}
+*Date:* ${selectedDate}
+*Time Slot:* ${selectedTime}
 
 *Customer Details:*
 Name: ${userDetails.name}
 Phone: ${userDetails.phone}
-Date: ${userDetails.date}
     `.trim();
 
         try {
@@ -83,6 +147,38 @@ Date: ${userDetails.date}
         }
     };
 
+    const generateCalendar = () => {
+        const year = currentMonth.getFullYear();
+        const month = currentMonth.getMonth();
+        const firstDay = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0);
+        const daysInMonth = lastDay.getDate();
+        const startingDay = firstDay.getDay();
+
+        const days = [];
+        for (let i = 0; i < startingDay; i++) {
+            days.push(<div key={`empty-${i}`} className="p-2"></div>);
+        }
+        for (let i = 1; i <= daysInMonth; i++) {
+            const date = new Date(year, month, i);
+            const dateString = date.toISOString().split('T')[0];
+            const isSelected = selectedDate === dateString;
+            const isPast = date < new Date(new Date().setHours(0, 0, 0, 0));
+
+            days.push(
+                <button
+                    key={i}
+                    disabled={isPast}
+                    onClick={() => { setSelectedDate(dateString); setSelectedTime(''); }}
+                    className={`p-2 rounded-lg text-sm font-medium transition-colors ${isSelected ? 'bg-brand-primary text-black' : isPast ? 'text-zinc-600 cursor-not-allowed' : 'text-zinc-300 hover:bg-zinc-800'}`}
+                >
+                    {i}
+                </button>
+            );
+        }
+        return days;
+    };
+
     return (
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/90 backdrop-blur-xl animate-fade-in p-4">
             <div className="w-full max-w-2xl bg-zinc-900 border border-white/10 rounded-3xl overflow-hidden flex flex-col shadow-2xl animate-zoom-in max-h-[90vh]">
@@ -90,17 +186,17 @@ Date: ${userDetails.date}
                 <div className="p-6 border-b border-white/5 flex justify-between items-center bg-white/5">
                     <div>
                         <h2 className="text-2xl font-serif italic text-white">
-                            {step === 'addons' ? 'Customize Your Package' : 'Finalize Booking'}
+                            {step === 'addons' ? 'Customize Your Package' : step === 'schedule' ? 'Select Date & Time' : 'Finalize Booking'}
                         </h2>
                         <p className="text-zinc-400 text-xs uppercase tracking-widest">
                             {selection.decoration.title} • {selection.plan.name}
                         </p>
-                    </div>
+                    </div >
                     <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full text-white transition-colors"><X size={20} /></button>
-                </div>
+                </div >
 
                 <div className="overflow-y-auto p-6 custom-scrollbar flex-grow">
-                    {step === 'addons' ? (
+                    {step === 'addons' && (
                         <div className="space-y-4">
                             <div className="bg-brand-primary/10 border border-brand-primary/20 p-4 rounded-xl mb-6">
                                 <h4 className="text-brand-primary font-bold text-sm uppercase tracking-wider mb-2">Included in Plan</h4>
@@ -149,80 +245,161 @@ Date: ${userDetails.date}
                                 ))}
                             </div>
                         </div>
-                    ) : (
-                        <form id="booking-form" onSubmit={handleSubmit} className="space-y-6">
-                            <div className="bg-zinc-950 p-4 rounded-xl border border-zinc-800 space-y-2">
-                                <h4 className="text-zinc-400 text-xs uppercase font-bold">Order Summary</h4>
-                                <div className="flex justify-between text-sm text-zinc-200">
-                                    <span>{selection.plan.name}</span>
-                                    <span>{selection.plan.price}</span>
+                    )}
+
+                    {step === 'schedule' && (
+                        <div className="space-y-6">
+                            {/* Calendar */}
+                            <div className="bg-zinc-950 p-4 rounded-xl border border-zinc-800">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h4 className="text-white font-bold text-sm uppercase tracking-wider">
+                                        {currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
+                                    </h4>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => setCurrentMonth(new Date(currentMonth.setMonth(currentMonth.getMonth() - 1)))} className="p-1 text-zinc-400 hover:text-white"><Minus size={16} /></button>
+                                        <button onClick={() => setCurrentMonth(new Date(currentMonth.setMonth(currentMonth.getMonth() + 1)))} className="p-1 text-zinc-400 hover:text-white"><Plus size={16} /></button>
+                                    </div>
                                 </div>
-                                {Object.entries(selectedAddons).map(([id, qty]) => {
-                                    const addon = addons.find(a => a.id === Number(id));
-                                    if (!addon) return null;
-                                    return (
-                                        <div key={id} className="flex justify-between text-sm text-zinc-400">
-                                            <span>{addon.name} {addon.type === 'quantity' && `x${qty}`}</span>
-                                            <span>{addon.price}</span>
-                                        </div>
-                                    );
-                                })}
+                                <div className="grid grid-cols-7 gap-1 text-center mb-2">
+                                    {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => (
+                                        <div key={d} className="text-xs text-zinc-500 font-bold">{d}</div>
+                                    ))}
+                                </div>
+                                <div className="grid grid-cols-7 gap-1">
+                                    {generateCalendar()}
+                                </div>
                             </div>
 
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-xs font-bold text-zinc-500 uppercase mb-1">Full Name</label>
-                                    <input
-                                        required
-                                        type="text"
-                                        value={userDetails.name}
-                                        onChange={e => setUserDetails({ ...userDetails, name: e.target.value })}
-                                        className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-3 text-white focus:outline-none focus:border-brand-primary"
-                                        placeholder="Enter your name"
-                                    />
+                            {/* Time Slots */}
+                            {selectedDate && (
+                                <div className="animate-fade-in space-y-4">
+                                    <h4 className="text-white font-bold text-sm uppercase tracking-wider">Select Time</h4>
+
+                                    <div className="bg-zinc-950 p-4 rounded-xl border border-zinc-800 space-y-4">
+                                        <div className="flex gap-4 justify-center">
+                                            <TimePicker
+                                                label="Start Time"
+                                                value={selectedTime.split(' - ')[0] || '10:00 AM'}
+                                                onChange={(val) => {
+                                                    const end = selectedTime.split(' - ')[1] || '01:00 PM';
+                                                    setSelectedTime(`${val} - ${end}`);
+                                                }}
+                                            />
+                                            <TimePicker
+                                                label="End Time"
+                                                value={selectedTime.split(' - ')[1] || '01:00 PM'}
+                                                onChange={(val) => {
+                                                    const start = selectedTime.split(' - ')[0] || '10:00 AM';
+                                                    setSelectedTime(`${start} - ${val}`);
+                                                }}
+                                            />
+                                        </div>
+                                        <p className="text-xs text-zinc-500 italic text-center">
+                                            Selected: <span className={`font-bold ${hasOverlap || isInvalidRange ? 'text-red-500' : 'text-brand-primary'}`}>
+                                                {selectedTime || 'Incomplete'}
+                                            </span>
+                                            {hasOverlap && <span className="block text-red-500 font-bold mt-1">⚠️ Time slot overlaps with an existing booking</span>}
+                                            {isInvalidRange && <span className="block text-red-500 font-bold mt-1">⚠️ End time must be after start time</span>}
+                                        </p>
+
+                                        {blockedSlots.length > 0 && (
+                                            <div className="mt-4 pt-4 border-t border-zinc-800">
+                                                <p className="text-xs text-red-400 font-bold mb-2">Unavailable Slots:</p>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {blockedSlots.map(slot => (
+                                                        <span key={slot} className="px-2 py-1 bg-red-900/20 text-red-400 text-xs rounded border border-red-900/30">{slot}</span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-zinc-500 uppercase mb-1">Phone Number</label>
-                                    <input
-                                        required
-                                        type="tel"
-                                        value={userDetails.phone}
-                                        onChange={e => setUserDetails({ ...userDetails, phone: e.target.value })}
-                                        className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-3 text-white focus:outline-none focus:border-brand-primary"
-                                        placeholder="Enter your phone number"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-zinc-500 uppercase mb-1">Event Date</label>
-                                    <input
-                                        required
-                                        type="date"
-                                        value={userDetails.date}
-                                        onChange={e => setUserDetails({ ...userDetails, date: e.target.value })}
-                                        className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-3 text-white focus:outline-none focus:border-brand-primary"
-                                    />
-                                </div>
-                            </div>
-                        </form>
+                            )}
+                        </div>
+
                     )}
-                </div>
+
+                    {
+                        step === 'details' && (
+                            <form id="booking-form" onSubmit={handleSubmit} className="space-y-6">
+                                <div className="bg-zinc-950 p-4 rounded-xl border border-zinc-800 space-y-2">
+                                    <h4 className="text-zinc-400 text-xs uppercase font-bold">Order Summary</h4>
+                                    <div className="flex justify-between text-sm text-zinc-200">
+                                        <span>{selection.plan.name}</span>
+                                        <span>{selection.plan.price}</span>
+                                    </div>
+                                    {Object.entries(selectedAddons).map(([id, qty]) => {
+                                        const addon = addons.find(a => a.id === Number(id));
+                                        if (!addon) return null;
+                                        return (
+                                            <div key={id} className="flex justify-between text-sm text-zinc-400">
+                                                <span>{addon.name} {addon.type === 'quantity' && `x${qty}`}</span>
+                                                <span>{addon.price}</span>
+                                            </div>
+                                        );
+                                    })}
+                                    <div className="border-t border-zinc-800 pt-2 mt-2 flex justify-between text-sm text-brand-primary font-bold">
+                                        <span>Date & Time</span>
+                                        <span>{selectedDate} | {selectedTime}</span>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-xs font-bold text-zinc-500 uppercase mb-1">Full Name</label>
+                                        <input
+                                            required
+                                            type="text"
+                                            value={userDetails.name}
+                                            onChange={e => setUserDetails({ ...userDetails, name: e.target.value })}
+                                            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-3 text-white focus:outline-none focus:border-brand-primary"
+                                            placeholder="Enter your name"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-zinc-500 uppercase mb-1">Phone Number</label>
+                                        <input
+                                            required
+                                            type="tel"
+                                            value={userDetails.phone}
+                                            onChange={e => setUserDetails({ ...userDetails, phone: e.target.value })}
+                                            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-3 text-white focus:outline-none focus:border-brand-primary"
+                                            placeholder="Enter your phone number"
+                                        />
+                                    </div>
+                                </div>
+                            </form>
+                        )
+                    }
+                </div >
 
                 <div className="p-6 border-t border-white/5 bg-zinc-950">
-                    {step === 'addons' ? (
-                        <button
-                            onClick={() => setStep('details')}
-                            className="w-full py-4 rounded-full bg-white text-black font-bold text-sm uppercase tracking-wider hover:bg-zinc-200 transition-colors flex items-center justify-center gap-2"
-                        >
-                            Proceed to Details <ArrowRight size={16} />
-                        </button>
-                    ) : (
-                        <div className="flex gap-4">
+                    <div className="flex gap-4">
+                        {step !== 'addons' && (
                             <button
-                                onClick={() => setStep('addons')}
+                                onClick={() => setStep(step === 'details' ? 'schedule' : 'addons')}
                                 className="px-6 py-4 rounded-full bg-zinc-800 text-white font-bold text-sm uppercase tracking-wider hover:bg-zinc-700 transition-colors"
                             >
                                 Back
                             </button>
+                        )}
+
+                        {step === 'addons' ? (
+                            <button
+                                onClick={() => setStep('schedule')}
+                                className="w-full py-4 rounded-full bg-white text-black font-bold text-sm uppercase tracking-wider hover:bg-zinc-200 transition-colors flex items-center justify-center gap-2"
+                            >
+                                Next: Select Date <ArrowRight size={16} />
+                            </button>
+                        ) : step === 'schedule' ? (
+                            <button
+                                disabled={!selectedDate || !selectedTime || hasOverlap || isInvalidRange}
+                                onClick={() => setStep('details')}
+                                className="flex-grow py-4 rounded-full bg-white text-black font-bold text-sm uppercase tracking-wider hover:bg-zinc-200 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Next: Details <ArrowRight size={16} />
+                            </button>
+                        ) : (
                             <button
                                 form="booking-form"
                                 type="submit"
@@ -231,11 +408,11 @@ Date: ${userDetails.date}
                             >
                                 {submitting ? 'Sending...' : 'Get Quotation'} <ShoppingCart size={16} />
                             </button>
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </div>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 };
 

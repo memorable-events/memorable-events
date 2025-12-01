@@ -76,6 +76,16 @@ def init_db():
 		)
 		"""
 	)
+	cur.execute(
+		"""
+		CREATE TABLE IF NOT EXISTS bookings (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			date TEXT NOT NULL,
+			time_slot TEXT NOT NULL,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		)
+		"""
+	)
 	db.commit()
 
 
@@ -237,11 +247,57 @@ def create_app():
 		items = [dict(row) for row in rows]
 		return jsonify({"inquiries": items})
 
+	# ===== Booking API =====
+	@app.route("/api/bookings", methods=["GET"])
+	def get_bookings():
+		date = request.args.get("date")
+		db = get_db()
+		cur = db.cursor()
+		if date:
+			cur.execute("SELECT * FROM bookings WHERE date = ?", (date,))
+		else:
+			cur.execute("SELECT * FROM bookings ORDER BY date, time_slot")
+		rows = cur.fetchall()
+		return jsonify([dict(row) for row in rows])
+
+	@app.route("/api/bookings", methods=["POST"])
+	@token_required
+	def create_booking():
+		data = request.get_json() or {}
+		date = data.get("date")
+		time_slot = data.get("time_slot")
+		if not date or not time_slot:
+			return jsonify({"error": "Date and time_slot required"}), 400
+		
+		db = get_db()
+		cur = db.cursor()
+		# Check if exists
+		cur.execute("SELECT id FROM bookings WHERE date = ? AND time_slot = ?", (date, time_slot))
+		if cur.fetchone():
+			return jsonify({"error": "Slot already booked"}), 409
+			
+		cur.execute("INSERT INTO bookings (date, time_slot) VALUES (?, ?)", (date, time_slot))
+		db.commit()
+		return jsonify({"ok": True, "id": cur.lastrowid}), 201
+
+	@app.route("/api/bookings/<int:booking_id>", methods=["DELETE"])
+	@token_required
+	def delete_booking(booking_id):
+		db = get_db()
+		cur = db.cursor()
+		cur.execute("DELETE FROM bookings WHERE id = ?", (booking_id,))
+		db.commit()
+		return jsonify({"ok": True})
+
 	@app.route("/api/inquiry", methods=["POST"])
 	def public_inquiry():
 		data = request.get_json() or {}
 		name = data.get("name")
-		email = data.get("email")
+		email = data.get("email") # Optional now
+		date = data.get("date")
+		contact_number = data.get("contactNumber")
+		indoor_outdoor = data.get("indoorOutdoor")
+		event_type = data.get("type")
 		message = data.get("message")
 		
 		# Save to DB
@@ -249,10 +305,25 @@ def create_app():
 		cur = db.cursor()
 		cur.execute(
 			"INSERT INTO inquiries (name, email, message) VALUES (?, ?, ?)",
-			(name, email, message),
+			(name, email or "", message),
 		)
 		db.commit()
 		inquiry_id = cur.lastrowid
+
+		# Construct Message
+		msg_body = f"*New Inquiry via Website*\n\n*Name:* {name}"
+		if contact_number:
+			msg_body += f"\n*Phone:* {contact_number}"
+		if date:
+			msg_body += f"\n*Date:* {date}"
+		if indoor_outdoor:
+			msg_body += f"\n*Service:* {indoor_outdoor}"
+		if event_type:
+			msg_body += f"\n*Type:* {event_type}"
+		if email:
+			msg_body += f"\n*Email:* {email}"
+		
+		msg_body += f"\n*Message:* {message}"
 
 		# Send Notification
 		# Option 1: Twilio (User Preferred - Reliable & Standard)
@@ -273,7 +344,7 @@ def create_app():
 				data = {
 					"From": twilio_from,
 					"To": f"whatsapp:+{phone}",
-					"Body": f"*New Inquiry via Website*\n\n*Name:* {name}\n*Email:* {email}\n*Message:* {message}"
+					"Body": msg_body
 				}
 				requests.post(url, data=data, auth=auth, timeout=10)
 				print(f"DEBUG: Sent WhatsApp notification via Twilio")
@@ -286,7 +357,7 @@ def create_app():
 				headers = {"Authorization": f"Bearer {wa_token}", "Content-Type": "application/json"}
 				payload = {
 					"messaging_product": "whatsapp", "to": "919978634999", "type": "text",
-					"text": {"body": f"*New Inquiry via Website*\n\n*Name:* {name}\n*Email:* {email}\n*Message:* {message}"}
+					"text": {"body": msg_body}
 				}
 				requests.post(url, json=payload, headers=headers, timeout=10)
 				print(f"DEBUG: Sent WhatsApp Cloud API notification")
@@ -294,7 +365,7 @@ def create_app():
 			# Option 3: Discord Webhook (Free & Easy)
 			elif os.environ.get("DISCORD_WEBHOOK_URL"):
 				discord_url = os.environ.get("DISCORD_WEBHOOK_URL")
-				payload = {"content": f"🎉 **New Inquiry via Website**\n\n👤 **Name:** {name}\n📧 **Email:** {email}\n📝 **Message:** {message}"}
+				payload = {"content": f"🎉 **New Inquiry**\n{msg_body}"}
 				requests.post(discord_url, json=payload, timeout=10)
 				print(f"DEBUG: Sent Discord notification")
 
@@ -302,9 +373,8 @@ def create_app():
 			elif os.environ.get("TELEGRAM_BOT_TOKEN"):
 				tg_token = os.environ.get("TELEGRAM_BOT_TOKEN")
 				tg_chat_id = os.environ.get("TELEGRAM_CHAT_ID")
-				text = f"🎉 *New Inquiry via Website*\n\n👤 *Name:* {name}\n📧 *Email:* {email}\n📝 *Message:* {message}"
 				url = f"https://api.telegram.org/bot{tg_token}/sendMessage"
-				payload = {"chat_id": tg_chat_id, "text": text, "parse_mode": "Markdown"}
+				payload = {"chat_id": tg_chat_id, "text": msg_body, "parse_mode": "Markdown"}
 				requests.post(url, json=payload, timeout=10)
 				print(f"DEBUG: Sent Telegram notification")
 
@@ -313,8 +383,7 @@ def create_app():
 				import urllib.parse
 				phone = "919978634999"
 				api_key = os.environ.get("WHATSAPP_BOT_API_KEY")
-				text = f"*New Inquiry via Website*\n\n*Name:* {name}\n*Email:* {email}\n*Message:* {message}"
-				encoded_text = urllib.parse.quote(text)
+				encoded_text = urllib.parse.quote(msg_body)
 				url = f"https://api.callmebot.com/whatsapp.php?phone={phone}&text={encoded_text}&apikey={api_key}"
 				requests.get(url, timeout=10)
 				print(f"DEBUG: Sent WhatsApp notification via CallMeBot")
@@ -336,7 +405,7 @@ def create_app():
 				payload = {
 					"from": "919978634999", # Sender ID or Number
 					"to": "919978634999",
-					"text": f"*New Inquiry via Website*\n\n*Name:* {name}\n*Email:* {email}\n*Message:* {message}"
+					"text": msg_body
 				}
 				
 				# requests.post(url, json=payload, auth=auth, timeout=10)

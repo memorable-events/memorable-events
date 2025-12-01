@@ -85,6 +85,13 @@ export interface AddOn {
     type: 'checkbox' | 'quantity';
 }
 
+export interface Booking {
+    id: number;
+    date: string;
+    time_slot: string;
+    created_at?: string;
+}
+
 // API Response Types
 export interface ContentResponse {
     indoorDecorations: Service[];

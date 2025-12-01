@@ -11,7 +11,7 @@ const CakeSection: React.FC<CakeSectionProps> = ({ cakes }) => {
     <section id="cakes" className="mb-24 md:mb-32 relative z-10 max-w-7xl mx-auto px-4">
       <div className="text-center mb-12">
         <h2 className="text-3xl md:text-5xl font-serif italic text-white mb-3">
-          Artisan Bakery
+          Memorable Bakery
         </h2>
         <p className="text-[10px] md:text-xs text-zinc-500 uppercase tracking-widest font-medium">
           Handcrafted confections for your special day

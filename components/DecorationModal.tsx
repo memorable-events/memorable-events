@@ -45,7 +45,7 @@ const DecorationModal: React.FC<DecorationModalProps> = ({ isOpen, onClose, deco
                 <div
                   key={item.id}
                   onClick={() => setSelectedSetup(item)}
-                  className={`flex-none w-72 md:w-80 group relative rounded-2xl overflow-hidden bg-zinc-900 border cursor-pointer transition-all duration-300 snap-center ${selectedSetup?.id === item.id ? 'border-brand-primary ring-2 ring-brand-primary/50' : 'border-white/5 hover:border-white/20'}`}
+                  className={`flex-none w-48 md:w-56 group relative rounded-2xl overflow-hidden bg-zinc-900 border cursor-pointer transition-all duration-300 snap-center ${selectedSetup?.id === item.id ? 'border-brand-primary ring-2 ring-brand-primary/50' : 'border-white/5 hover:border-white/20'}`}
                 >
                   <div className="aspect-[4/5] relative">
                     {item.src.match(/\.(mp4|webm)$/i) ? (

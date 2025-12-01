@@ -5,15 +5,45 @@
       "description": "Vibrant and fun setups to make any birthday special.",
       "id": 1,
       "image": "https://i.ibb.co/j9QGnmXH/Whats-App-Image-2025-11-30-at-11-47-38-f1a48935.jpg",
-      "title": "Birthday Party",
       "setups": [
         {
-          "title": "Setup 1",
+          "id": 1764484633494,
+          "price": "3500",
+          "src": "https://res.cloudinary.com/dgshj0uot/video/upload/v1764619029/nbgataz5pspa4lsy9u4m.mp4",
+          "title": "Setup 2"
+        },
+        {
+          "id": 1764484633494,
           "price": "3500",
           "src": "https://i.ibb.co/qbQmdcm/IMG-20251126-WA0013.jpg",
-          "id": 1764484633494
+          "title": "Setup 1"
+        },
+        {
+          "id": 1764484633494,
+          "price": "3500",
+          "src": "https://i.ibb.co/qbQmdcm/IMG-20251126-WA0013.jpg",
+          "title": "Setup 1"
+        },
+        {
+          "id": 1764484633494,
+          "price": "3500",
+          "src": "https://i.ibb.co/qbQmdcm/IMG-20251126-WA0013.jpg",
+          "title": "Setup 1"
+        },
+        {
+          "id": 1764484633494,
+          "price": "3500",
+          "src": "https://i.ibb.co/qbQmdcm/IMG-20251126-WA0013.jpg",
+          "title": "Setup 1"
+        },
+        {
+          "id": 1764484633494,
+          "price": "3500",
+          "src": "https://i.ibb.co/qbQmdcm/IMG-20251126-WA0013.jpg",
+          "title": "Setup 1"
         }
-      ]
+      ],
+      "title": "Birthday Party"
     },
     {
       "category": "Romance",
@@ -28,20 +58,6 @@
       "id": 3,
       "image": "https://i.ibb.co/YBV1XVq9/btb.jpg",
       "title": "Bride to Be"
-    },
-    {
-      "category": "Social",
-      "description": "Fun and engaging themes for your next get-together.",
-      "id": 4,
-      "image": "https://i.ibb.co/SD6f36cz/kitty-party-invitation-templates.jpg",
-      "title": "Kitty Party"
-    },
-    {
-      "category": "Casual",
-      "description": "Relaxed and cozy setups for friends and family.",
-      "id": 5,
-      "image": "https://i.ibb.co/Xry3dJ0h/gtg.webp",
-      "title": "Get Together"
     },
     {
       "category": "Intimate",
