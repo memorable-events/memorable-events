@@ -340,7 +340,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose, content, actio
                                                         try {
                                                             const url = await api.uploadFile(e.target.files[0]);
                                                             setNewSetup(prev => ({ ...prev, src: url }));
-                                                        } catch (err) { alert("Upload failed"); }
+                                                        } catch (err: any) { alert(`Upload failed: ${err.message}`); }
                                                     }
                                                 }}
                                             />
