@@ -629,11 +629,12 @@ def create_app():
 	@app.route("/api/upload", methods=["POST"])
 	@token_required
 	def upload_file():
-		if "file" not in request.files:
-			return jsonify({"error": "No file part"}), 400
-		file = request.files["file"]
-		if file.filename == "":
-			return jsonify({"error": "No selected file"}), 400
+		try:
+			if "file" not in request.files:
+				return jsonify({"error": "No file part"}), 400
+			file = request.files["file"]
+			if file.filename == "":
+				return jsonify({"error": "No selected file"}), 400
 
 		# Check if it's a video
 		is_video = file.content_type.startswith('video/')
@@ -724,6 +725,12 @@ def create_app():
 			return jsonify({"url": result["data"]["url"]})
 		except Exception as e:
 			print(f"Upload exception: {e}")
+			# Return the direct display URL
+			return jsonify({"url": result["data"]["url"]})
+		except Exception as e:
+			print(f"Upload exception: {e}")
+			import traceback
+			traceback.print_exc()
 			return jsonify({"error": f"Internal upload error: {str(e)}"}), 500
 
 	@app.route("/api/settings", methods=["POST"])
