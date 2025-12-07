@@ -121,12 +121,50 @@ def create_app():
 	}
 
 	# PythonAnywhere Proxy Fix
+	# PythonAnywhere free tier provides 'http_proxy' but some libs look for 'HTTP_PROXY'
 	proxy = os.environ.get("http_proxy") or os.environ.get("HTTP_PROXY")
 	if proxy:
-		print(f"DEBUG: Using Proxy for Cloudinary: {proxy}")
+		# Ensure scheme is present
+		if not proxy.startswith("http"):
+			proxy = f"http://{proxy}"
+			
+		print(f"DEBUG: Found proxy: {proxy}")
+		# Set ALL variants to be safe
+		os.environ["HTTP_PROXY"] = proxy
+		os.environ["HTTPS_PROXY"] = proxy
+		os.environ["http_proxy"] = proxy
+		os.environ["https_proxy"] = proxy
+		
 		cloudinary_config["api_proxy"] = proxy
+	else:
+		print("DEBUG: No proxy environment variable found.")
 
 	cloudinary.config(**cloudinary_config)
+
+	@app.route("/api/debug-connection", methods=["GET"])
+	def debug_connection():
+		results = {}
+		# Test Google
+		try:
+			r = requests.get("https://www.google.com", timeout=5)
+			results["google"] = f"Success: {r.status_code}"
+		except Exception as e:
+			results["google"] = f"Failed: {str(e)}"
+			
+		# Test Cloudinary
+		try:
+			r = requests.get("https://api.cloudinary.com/v1_1/ping", timeout=5)
+			results["cloudinary"] = f"Success: {r.status_code}"
+		except Exception as e:
+			results["cloudinary"] = f"Failed: {str(e)}"
+			
+		results["proxy_env"] = {
+			"http_proxy": os.environ.get("http_proxy"),
+			"HTTP_PROXY": os.environ.get("HTTP_PROXY"),
+			"https_proxy": os.environ.get("https_proxy"),
+			"HTTPS_PROXY": os.environ.get("HTTPS_PROXY")
+		}
+		return jsonify(results)
 
 	# Initialize DB and default admin now (avoid using before_first_request)
 	with app.app_context():
@@ -601,23 +639,66 @@ def create_app():
 		is_video = file.content_type.startswith('video/')
 		
 		if is_video:
-			# Upload video to Cloudinary
+			# Upload video to Cloudinary using direct Request (Bypassing SDK to force Proxy)
 			try:
+				import time
+				import cloudinary.utils
+				
 				# Save temporarily
 				filename = f"{uuid.uuid4()}_{file.filename}"
 				filepath = os.path.join(STATIC_REELS_DIR, filename)
 				file.save(filepath)
 				
-				upload_result = cloudinary.uploader.upload(filepath, resource_type="video")
-				cloudinary_url = upload_result.get("secure_url")
+				# Prepare Direct Upload
+				cloud_name = os.environ.get("CLOUDINARY_CLOUD_NAME")
+				api_key = os.environ.get("CLOUDINARY_API_KEY")
+				api_secret = os.environ.get("CLOUDINARY_API_SECRET")
+				
+				timestamp = int(time.time())
+				params_to_sign = {"timestamp": timestamp}
+				signature = cloudinary.utils.api_sign_request(params_to_sign, api_secret)
+				
+				payload = {
+					"api_key": api_key,
+					"timestamp": timestamp,
+					"signature": signature
+				}
+				
+				# Explicit Proxy for PythonAnywhere
+				proxies = {
+					"http": "http://proxy.server:3128",
+					"https": "http://proxy.server:3128"
+				}
+				
+				print(f"DEBUG: Starting direct upload to Cloudinary for {filename}")
+				
+				with open(filepath, "rb") as f:
+					files = {"file": f}
+					upload_url = f"https://api.cloudinary.com/v1_1/{cloud_name}/video/upload"
+					
+					# Force proxy usage
+					resp = requests.post(upload_url, data=payload, files=files, proxies=proxies, timeout=600)
+					
+				if resp.status_code != 200:
+					print(f"Cloudinary Direct Upload Failed: {resp.text}")
+					if os.path.exists(filepath):
+						os.remove(filepath)
+					return jsonify({"error": f"Cloudinary Upload Failed: {resp.text}"}), 500
+					
+				result = resp.json()
+				cloudinary_url = result.get("secure_url")
 				
 				# Clean up
 				if os.path.exists(filepath):
 					os.remove(filepath)
 					
 				return jsonify({"url": cloudinary_url})
+				
 			except Exception as e:
 				print(f"Cloudinary Upload Error: {e}")
+				# Clean up
+				if os.path.exists(filepath):
+					os.remove(filepath)
 				return jsonify({"error": f"Failed to upload video: {str(e)}"}), 500
 
 		# Image upload (ImgBB)
@@ -626,7 +707,6 @@ def create_app():
 			return jsonify({"error": "Server configuration error: Missing IMGBB_API_KEY"}), 500
 
 		try:
-			import requests
 			# ImgBB API expects 'image' field
 			files = {"image": (file.filename, file.read(), file.content_type)}
 			params = {"key": api_key}
