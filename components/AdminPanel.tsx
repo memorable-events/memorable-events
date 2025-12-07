@@ -773,8 +773,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose, content, actio
                                                                     const url = await api.uploadFile(e.target.files[0]);
                                                                     await actions.onUpdateSettings({ heroVideoUrl: url });
                                                                     alert("Video uploaded and updated successfully!");
-                                                                } catch (err) {
-                                                                    alert("Upload failed");
+                                                                } catch (err: any) {
+                                                                    alert(`Upload failed: ${err.message}`);
                                                                 } finally {
                                                                     if (btn) btn.innerHTML = '<span class="text-sm font-medium text-zinc-300 group-hover:text-white">Choose Video File</span>';
                                                                 }
