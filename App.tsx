@@ -202,147 +202,150 @@ function App() {
       }
     } catch (e) {
       console.error("Delete failed", e);
-      alert("Failed to delete item");
+    } catch (e: any) {
+      console.error("Delete failed", e);
+      alert(e.message || "Failed to delete item");
     }
-  };
-
-  const handleUpdateSettings = async (newSettings: any) => {
-    try {
-      const updated = await api.updateSettings(newSettings);
-      setSettings(prev => ({ ...prev, ...updated }));
-    } catch (e) {
-      console.error("Settings update failed", e);
-      alert("Failed to update settings");
-    }
-  };
-
-  const handleDecorationClick = (decoration: Service) => {
-    setSelectedDecoration(decoration);
-    setActiveModal(ModalType.DECORATION);
-  };
-
-  if (!mode) {
-    return <ModeSelectionScreen onSelect={(selectedMode) => setMode(selectedMode)} />;
   }
+};
 
-  const setupImagesForModal = selectedDecoration?.setups || [];
+const handleUpdateSettings = async (newSettings: any) => {
+  try {
+    const updated = await api.updateSettings(newSettings);
+    setSettings(prev => ({ ...prev, ...updated }));
+  } catch (e) {
+    console.error("Settings update failed", e);
+    alert("Failed to update settings");
+  }
+};
 
-  return (
-    <div className="min-h-screen bg-brand-bg text-white relative selection:bg-brand-primary/30 animate-in fade-in duration-700">
-      <Navbar
-        onLoginClick={() => setActiveModal(ModalType.LOGIN)}
-        currentMode={mode}
-        onModeSwitch={setMode}
-        isAdmin={isAdmin}
-        onAdminPanelClick={() => setActiveModal(ModalType.ADMIN_PANEL)}
-      />
+const handleDecorationClick = (decoration: Service) => {
+  setSelectedDecoration(decoration);
+  setActiveModal(ModalType.DECORATION);
+};
 
-      <main className="max-w-7xl mx-auto px-4 md:px-6 pt-24 md:pt-32 pb-20 relative z-10">
+if (!mode) {
+  return <ModeSelectionScreen onSelect={(selectedMode) => setMode(selectedMode)} />;
+}
 
-        <div className="relative w-full max-w-7xl mx-auto rounded-[2.5rem] p-6 md:p-12 mb-24 overflow-hidden min-h-[500px] md:min-h-[420px] flex flex-col justify-end border border-white/5 bg-zinc-900/20 shadow-2xl isolate group">
-          <div className="absolute inset-0 w-full h-full z-0">
-            <video
-              ref={heroVideoRef}
-              autoPlay
-              loop
-              muted
-              playsInline
-              className="absolute w-full h-full object-cover transition-opacity duration-1000"
-              key={settings.heroVideoUrl || 'default'}
-            >
-              <source src={settings.heroVideoUrl || "/hero.mp4"} type="video/mp4" />
-            </video>
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent opacity-80" />
-            <div className="absolute inset-0 bg-black/20" />
-          </div>
-          <div className="relative z-20 max-w-4xl">
-            <div className="inline-block px-4 py-1.5 mb-6 rounded-full border border-white/10 bg-white/5 backdrop-blur-md shadow-lg">
-              <span className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-300">
-                {mode === 'INDOOR' ? 'Premium Party Rooms' : 'Outdoor Event Logistics'}
-              </span>
-            </div>
-            <h1 className="text-5xl md:text-7xl font-bold tracking-tighter text-white opacity-95">
-              {mode === 'INDOOR' ? 'Venue Atmosphere' : 'To Your Doorstep'}
-            </h1>
-            <p className="mt-8 text-zinc-300 max-w-lg text-base leading-relaxed">
-              {mode === 'INDOOR'
-                ? "Step into our exclusive soundproof party suites equipped with high-fidelity audio, dynamic lighting, and private bar service."
-                : "From backyard gatherings to large-scale festivals, we provide the tents, power, and logistics to make any location perfect."}
-            </p>
-            <div className="mt-8">
-              <a href="#contact" onClick={scrollToInquiry} className="inline-flex items-center gap-2 px-8 py-3 rounded-full bg-white text-black text-xs font-bold uppercase tracking-widest hover:bg-zinc-200 transition-all active:scale-95 shadow-lg group">
-                Inquire Now <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
-              </a>
-            </div>
-          </div>
+const setupImagesForModal = selectedDecoration?.setups || [];
+
+return (
+  <div className="min-h-screen bg-brand-bg text-white relative selection:bg-brand-primary/30 animate-in fade-in duration-700">
+    <Navbar
+      onLoginClick={() => setActiveModal(ModalType.LOGIN)}
+      currentMode={mode}
+      onModeSwitch={setMode}
+      isAdmin={isAdmin}
+      onAdminPanelClick={() => setActiveModal(ModalType.ADMIN_PANEL)}
+    />
+
+    <main className="max-w-7xl mx-auto px-4 md:px-6 pt-24 md:pt-32 pb-20 relative z-10">
+
+      <div className="relative w-full max-w-7xl mx-auto rounded-[2.5rem] p-6 md:p-12 mb-24 overflow-hidden min-h-[500px] md:min-h-[420px] flex flex-col justify-end border border-white/5 bg-zinc-900/20 shadow-2xl isolate group">
+        <div className="absolute inset-0 w-full h-full z-0">
+          <video
+            ref={heroVideoRef}
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="absolute w-full h-full object-cover transition-opacity duration-1000"
+            key={settings.heroVideoUrl || 'default'}
+          >
+            <source src={settings.heroVideoUrl || "/hero.mp4"} type="video/mp4" />
+          </video>
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent opacity-80" />
+          <div className="absolute inset-0 bg-black/20" />
         </div>
-
-        <EventSlider
-          services={mode === 'INDOOR' ? indoorDecorations : outdoorDecorations}
-          onCardClick={handleDecorationClick}
-        />
-        <PricingSection plans={mode === 'INDOOR' ? indoorPlans : outdoorPlans} mode={mode} />
-        <RealReelsSection mode={mode} reels={reels.filter(r => r.category === mode)} />
-        <CakeSection cakes={cakes} />
-        <EventGallery galleryItems={galleryItems} onViewMore={() => setActiveModal(ModalType.PORTFOLIO)} />
-        {mode === 'INDOOR' && <MenuSection />}
-        <InquirySection />
-
-      </main>
-
-      <footer className="w-full border-t border-white/5 bg-zinc-950 pt-16 pb-12">
-        <div className="max-w-7xl mx-auto px-6 text-center">
-          <h3 className="font-serif italic text-2xl text-white mb-6">Memorable Event</h3>
-          <div className="flex justify-center gap-8 mb-8 text-xs text-zinc-500 uppercase tracking-widest">
-            <a href="#services" className="hover:text-white transition-colors">Services</a>
-            <a href="#pricing" className="hover:text-white transition-colors">Plans</a>
-            <a href="#cakes" className="hover:text-white transition-colors">Cakes</a>
-            <a href="#gallery" className="hover:text-white transition-colors">Gallery</a>
-            <a href="#contact" className="hover:text-white transition-colors">Contact</a>
+        <div className="relative z-20 max-w-4xl">
+          <div className="inline-block px-4 py-1.5 mb-6 rounded-full border border-white/10 bg-white/5 backdrop-blur-md shadow-lg">
+            <span className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-300">
+              {mode === 'INDOOR' ? 'Premium Party Rooms' : 'Outdoor Event Logistics'}
+            </span>
           </div>
-          <p className="text-zinc-700 text-[10px] uppercase tracking-widest">
-            Memorable Event © 2025 · Designed by <a href="https://github.com/Jaybhatt-Github">Jay</a> · <button onClick={() => setActiveModal(ModalType.ADMIN_LOGIN)} className="hover:text-white transition-colors">Admin</button>
+          <h1 className="text-5xl md:text-7xl font-bold tracking-tighter text-white opacity-95">
+            {mode === 'INDOOR' ? 'Venue Atmosphere' : 'To Your Doorstep'}
+          </h1>
+          <p className="mt-8 text-zinc-300 max-w-lg text-base leading-relaxed">
+            {mode === 'INDOOR'
+              ? "Step into our exclusive soundproof party suites equipped with high-fidelity audio, dynamic lighting, and private bar service."
+              : "From backyard gatherings to large-scale festivals, we provide the tents, power, and logistics to make any location perfect."}
           </p>
+          <div className="mt-8">
+            <a href="#contact" onClick={scrollToInquiry} className="inline-flex items-center gap-2 px-8 py-3 rounded-full bg-white text-black text-xs font-bold uppercase tracking-widest hover:bg-zinc-200 transition-all active:scale-95 shadow-lg group">
+              Inquire Now <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+            </a>
+          </div>
         </div>
-      </footer>
-
-      <LoginModal isOpen={activeModal === ModalType.LOGIN} onClose={closeModal} />
-      <CreateEventModal isOpen={activeModal === ModalType.CREATE_EVENT} onClose={closeModal} />
-      <PortfolioModal isOpen={activeModal === ModalType.PORTFOLIO} onClose={closeModal} />
-      <DecorationModal
-        isOpen={activeModal === ModalType.DECORATION}
-        onClose={closeModal}
-        decoration={selectedDecoration}
-        setupImages={setupImagesForModal}
-        plans={mode === 'INDOOR' ? indoorPlans : outdoorPlans}
-        onPlanSelect={handlePlanSelect}
-      />
-      {bookingSelection && (
-        <BookingModal
-          isOpen={activeModal === ModalType.BOOKING}
-          onClose={closeModal}
-          selection={bookingSelection}
-          addons={addons}
-        />
-      )}
-      <AdminLoginModal isOpen={activeModal === ModalType.ADMIN_LOGIN} onClose={closeModal} onLogin={handleAdminLogin} />
-      {isAdmin && (
-        <AdminPanel
-          isOpen={activeModal === ModalType.ADMIN_PANEL}
-          onClose={closeModal}
-          content={{ indoorDecorations, outdoorDecorations, indoorPlans, outdoorPlans, cakes, galleryItems, reels, settings, addons }}
-          actions={{ onCreate: handleCreateItem, onUpdate: handleUpdateItem, onDelete: handleDeleteItem, onUpdateSettings: handleUpdateSettings }}
-        />
-      )}
-
-      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-purple-600/30 rounded-full blur-[120px] animate-float opacity-50 mix-blend-screen" />
-        <div className="absolute top-[20%] right-[-10%] w-[40%] h-[60%] bg-fuchsia-600/20 rounded-full blur-[100px] animate-pulse-slow opacity-40 mix-blend-screen" />
-        <div className="absolute bottom-[-10%] left-[20%] w-[60%] h-[40%] bg-purple-500/20 rounded-full blur-[140px] animate-float opacity-40 mix-blend-screen" style={{ animationDelay: '2s' }} />
       </div>
 
+      <EventSlider
+        services={mode === 'INDOOR' ? indoorDecorations : outdoorDecorations}
+        onCardClick={handleDecorationClick}
+      />
+      <PricingSection plans={mode === 'INDOOR' ? indoorPlans : outdoorPlans} mode={mode} />
+      <RealReelsSection mode={mode} reels={reels.filter(r => r.category === mode)} />
+      <CakeSection cakes={cakes} />
+      <EventGallery galleryItems={galleryItems} onViewMore={() => setActiveModal(ModalType.PORTFOLIO)} />
+      {mode === 'INDOOR' && <MenuSection />}
+      <InquirySection />
+
+    </main>
+
+    <footer className="w-full border-t border-white/5 bg-zinc-950 pt-16 pb-12">
+      <div className="max-w-7xl mx-auto px-6 text-center">
+        <h3 className="font-serif italic text-2xl text-white mb-6">Memorable Event</h3>
+        <div className="flex justify-center gap-8 mb-8 text-xs text-zinc-500 uppercase tracking-widest">
+          <a href="#services" className="hover:text-white transition-colors">Services</a>
+          <a href="#pricing" className="hover:text-white transition-colors">Plans</a>
+          <a href="#cakes" className="hover:text-white transition-colors">Cakes</a>
+          <a href="#gallery" className="hover:text-white transition-colors">Gallery</a>
+          <a href="#contact" className="hover:text-white transition-colors">Contact</a>
+        </div>
+        <p className="text-zinc-700 text-[10px] uppercase tracking-widest">
+          Memorable Event © 2025 · Designed by <a href="https://github.com/Jaybhatt-Github">Jay</a> · <button onClick={() => setActiveModal(ModalType.ADMIN_LOGIN)} className="hover:text-white transition-colors">Admin</button>
+        </p>
+      </div>
+    </footer>
+
+    <LoginModal isOpen={activeModal === ModalType.LOGIN} onClose={closeModal} />
+    <CreateEventModal isOpen={activeModal === ModalType.CREATE_EVENT} onClose={closeModal} />
+    <PortfolioModal isOpen={activeModal === ModalType.PORTFOLIO} onClose={closeModal} />
+    <DecorationModal
+      isOpen={activeModal === ModalType.DECORATION}
+      onClose={closeModal}
+      decoration={selectedDecoration}
+      setupImages={setupImagesForModal}
+      plans={mode === 'INDOOR' ? indoorPlans : outdoorPlans}
+      onPlanSelect={handlePlanSelect}
+    />
+    {bookingSelection && (
+      <BookingModal
+        isOpen={activeModal === ModalType.BOOKING}
+        onClose={closeModal}
+        selection={bookingSelection}
+        addons={addons}
+      />
+    )}
+    <AdminLoginModal isOpen={activeModal === ModalType.ADMIN_LOGIN} onClose={closeModal} onLogin={handleAdminLogin} />
+    {isAdmin && (
+      <AdminPanel
+        isOpen={activeModal === ModalType.ADMIN_PANEL}
+        onClose={closeModal}
+        content={{ indoorDecorations, outdoorDecorations, indoorPlans, outdoorPlans, cakes, galleryItems, reels, settings, addons }}
+        actions={{ onCreate: handleCreateItem, onUpdate: handleUpdateItem, onDelete: handleDeleteItem, onUpdateSettings: handleUpdateSettings }}
+      />
+    )}
+
+    <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-purple-600/30 rounded-full blur-[120px] animate-float opacity-50 mix-blend-screen" />
+      <div className="absolute top-[20%] right-[-10%] w-[40%] h-[60%] bg-fuchsia-600/20 rounded-full blur-[100px] animate-pulse-slow opacity-40 mix-blend-screen" />
+      <div className="absolute bottom-[-10%] left-[20%] w-[60%] h-[40%] bg-purple-500/20 rounded-full blur-[140px] animate-float opacity-40 mix-blend-screen" style={{ animationDelay: '2s' }} />
     </div>
-  );
+
+  </div>
+);
 }
 
 export default App;
