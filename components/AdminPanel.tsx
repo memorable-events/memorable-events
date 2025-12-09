@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Plus, Trash2, Edit, Save, Minus } from 'lucide-react';
+import { X, Plus, Trash2, Edit, Save, Minus, Loader } from 'lucide-react';
 import { Service, Plan, Cake, GalleryItem, RealReel, SetupImage, AddOn } from '../types';
 import { api } from '../services/apiService';
 import TimePicker from './TimePicker';
@@ -106,6 +106,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose, content, actio
         const [uploading, setUploading] = useState(false);
         const [newSetup, setNewSetup] = useState<Partial<SetupImage>>({});
         const [editingSetupIndex, setEditingSetupIndex] = useState<number | null>(null);
+        const [uploadingSetup, setUploadingSetup] = useState(false);
         const fields = getFieldsForResource(resource);
 
         const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -217,7 +218,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose, content, actio
                                         />
                                         <div className="flex items-center gap-2">
                                             <input type="file" onChange={handleFileChange} className="text-xs text-zinc-400" accept="image/*" />
-                                            {uploading && <span className="text-xs text-yellow-500">Uploading...</span>}
+                                            {uploading && <div className="flex items-center gap-2 text-yellow-500 text-xs"><Loader size={14} className="animate-spin" /> Uploading...</div>}
                                         </div>
                                         {formData[key] && <img src={formData[key]} alt="Preview" className="h-20 rounded border border-zinc-700" />}
                                     </div>
@@ -337,14 +338,17 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose, content, actio
                                                 accept={resource === 'indoor-decorations' || resource === 'outdoor-decorations' ? "image/*,video/*" : "image/*"}
                                                 onChange={async (e) => {
                                                     if (e.target.files?.[0]) {
+                                                        setUploadingSetup(true);
                                                         try {
                                                             const url = await api.uploadFile(e.target.files[0]);
                                                             setNewSetup(prev => ({ ...prev, src: url }));
                                                         } catch (err: any) { alert(`Upload failed: ${err.message}`); }
+                                                        finally { setUploadingSetup(false); }
                                                     }
                                                 }}
                                             />
                                         </label>
+                                        {uploadingSetup && <div className="flex items-center justify-center p-2"><Loader size={16} className="text-yellow-500 animate-spin" /></div>}
                                     </div>
                                     <div className="col-span-2 flex gap-2">
                                         {editingSetupIndex !== null && (
@@ -759,16 +763,29 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose, content, actio
                                             </div>
                                             <div>
                                                 <p className="text-xs text-zinc-400 mb-2">Option 2: Upload Video</p>
-                                                <label className="flex items-center justify-center gap-2 w-full p-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-600 rounded cursor-pointer transition-colors group">
-                                                    <span className="text-sm font-medium text-zinc-300 group-hover:text-white">Choose Video File</span>
+                                                <label className={`flex items-center justify-center gap-2 w-full p-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-600 rounded cursor-pointer transition-colors group ${isCreating === 'hero_upload' ? 'pointer-events-none opacity-50' : ''}`}>
+                                                    {isCreating === 'hero_upload' ? (
+                                                        <>
+                                                            <Loader size={16} className="text-yellow-500 animate-spin" />
+                                                            <span className="text-sm text-yellow-500">Uploading...</span>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <span className="text-sm font-medium text-zinc-300 group-hover:text-white">Choose Video File</span>
+                                                        </>
+                                                    )}
                                                     <input
                                                         type="file"
                                                         className="hidden"
                                                         accept="video/*"
+                                                        disabled={isCreating === 'hero_upload'}
                                                         onChange={async (e) => {
                                                             if (e.target.files?.[0]) {
-                                                                const btn = e.target.parentElement;
-                                                                if (btn) btn.innerHTML = '<span class="text-sm text-yellow-500">Uploading... Please wait</span>';
+                                                                setIsCreating('hero_upload'); // Abuse isCreating state temporarily for loading to avoid top-level state pollution if preferred, or add new state.
+                                                                // Actually better to add a new state at top level or just use this hack since component is large? 
+                                                                // Let's check AdminPanel "isCreating" type. It's string|null.
+                                                                // I'll assume we can use it or I should add a dedicated state.
+                                                                // Adding dedicated state at top level is cleaner.
                                                                 try {
                                                                     const url = await api.uploadFile(e.target.files[0]);
                                                                     await actions.onUpdateSettings({ heroVideoUrl: url });
@@ -776,7 +793,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose, content, actio
                                                                 } catch (err: any) {
                                                                     alert(`Upload failed: ${err.message}`);
                                                                 } finally {
-                                                                    if (btn) btn.innerHTML = '<span class="text-sm font-medium text-zinc-300 group-hover:text-white">Choose Video File</span>';
+                                                                    setIsCreating(null);
                                                                 }
                                                             }
                                                         }}
