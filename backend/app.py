@@ -596,12 +596,38 @@ def create_app():
 	def api_get_content():
 		return jsonify(read_content())
 
-	# Debug endpoint to echo request headers (useful to inspect what browser sends)
 	@app.route("/api/debug-headers", methods=["GET", "POST"])
 	def api_debug_headers():
 		# Convert headers to a plain dict
 		headers = {k: v for k, v in request.headers.items()}
 		return jsonify({"headers": headers, "remote_addr": request.remote_addr})
+
+	@app.route("/api/debug-connectivity", methods=["GET"])
+	def api_debug_connectivity():
+		results = {}
+		
+		# Test 1: Google (Usually whitelisted)
+		try:
+			r = requests.get("https://www.google.com", timeout=5)
+			results["google"] = f"OK ({r.status_code})"
+		except Exception as e:
+			results["google"] = f"FAIL: {str(e)}"
+			
+		# Test 2: Cobalt (Alternative API)
+		try:
+			r = requests.get("https://api.cobalt.tools", timeout=5)
+			results["cobalt"] = f"OK ({r.status_code})"
+		except Exception as e:
+			results["cobalt"] = f"FAIL: {str(e)}"
+			
+		# Test 3: Instagram (Direct check)
+		try:
+			r = requests.get("https://www.instagram.com", timeout=5)
+			results["instagram"] = f"OK ({r.status_code})"
+		except Exception as e:
+			results["instagram"] = f"FAIL: {str(e)}"
+
+		return jsonify(results)
 
 	@app.route("/api/login", methods=["POST"])
 	def api_login():
@@ -656,56 +682,7 @@ def create_app():
 				return i
 		return None
 
-	@app.route("/api/<resource>", methods=["POST", "GET"])
-	def api_collection(resource):
-		mapped = resource_map.get(resource)
-		if not mapped:
-			return jsonify({"error": "Unknown resource"}), 404
-		data = read_content()
-		if request.method == "GET":
-			return jsonify({mapped: data.get(mapped, [])})
-		# POST -> create (protected)
-		auth = token_required(lambda: None)
-		resp = auth()
-		if isinstance(resp, tuple) and resp[1] >= 400:
-			return resp
-		payload = request.get_json() or {}
-		items = data.get(mapped, [])
-		# assign id
-		max_id = max([it.get("id", 0) for it in items], default=0)
-		payload["id"] = max_id + 1
-		items.append(payload)
-		data[mapped] = items
-		write_content(data)
-		return jsonify(payload), 201
-
-	@app.route("/api/<resource>/<int:item_id>", methods=["PUT", "DELETE"]) 
-	def api_item(resource, item_id):
-		mapped = resource_map.get(resource)
-		if not mapped:
-			return jsonify({"error": "Unknown resource"}), 404
-		# Protected
-		auth = token_required(lambda: None)
-		resp = auth()
-		if isinstance(resp, tuple) and resp[1] >= 400:
-			return resp
-		data = read_content()
-		items = data.get(mapped, [])
-		idx = find_item_by_id(items, item_id)
-		if idx is None:
-			return jsonify({"error": "Not found"}), 404
-		if request.method == "DELETE":
-			items.pop(idx)
-			data[mapped] = items
-			write_content(data)
-			return jsonify({"ok": True})
-		# PUT -> update
-		payload = request.get_json() or {}
-		payload["id"] = item_id
-		items[idx] = payload
-		data[mapped] = items
-		write_content(data)
-		return jsonify(payload)
+	# api_collection and api_item moved to end of file to prevent route shadowing
 
 	@app.route("/api/upload", methods=["POST"])
 	@token_required
@@ -851,8 +828,52 @@ def create_app():
 			return jsonify({"url": cloudinary_url, "thumbnail": thumbnail_url, "embedUrl": url})
 
 		except Exception as e:
-			print(f"Download/Upload error (falling back to link): {e}")
-			# FALLBACK: Return success but with original URL so frontend uses Iframe
+			print(f"yt-dlp failed: {e}. Trying Cobalt API...")
+			
+			try:
+				# ALTERNATIVE API: Cobalt (Free, No Key)
+				headers = {
+					"Accept": "application/json",
+					"Content-Type": "application/json",
+					"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+				}
+				cobalt_payload = {"url": url}
+				# Try primary and backup instances if needed
+				cobalt_resp = requests.post("https://api.cobalt.tools/api/json", json=cobalt_payload, headers=headers, timeout=15)
+				
+				if cobalt_resp.status_code == 200:
+					c_data = cobalt_resp.json()
+					download_link = c_data.get("url")
+					
+					if download_link:
+						print(f"Cobalt success. Downloading from: {download_link}")
+						# Download the video from Cobalt
+						c_video = requests.get(download_link, stream=True)
+						
+						# Save to temp file
+						filename = f"{uuid.uuid4()}_cobalt.mp4"
+						filepath = os.path.join(STATIC_REELS_DIR, filename)
+						
+						with open(filepath, 'wb') as f:
+							for chunk in c_video.iter_content(chunk_size=8192):
+								f.write(chunk)
+								
+						# Upload to Cloudinary
+						upload_result = cloudinary.uploader.upload(filepath, resource_type="video")
+						cloudinary_url = upload_result.get("secure_url")
+						thumbnail_url = cloudinary_url.rsplit('.', 1)[0] + '.jpg'
+						
+						# Clean up
+						if os.path.exists(filepath):
+							os.remove(filepath)
+							
+						return jsonify({"url": cloudinary_url, "thumbnail": thumbnail_url, "embedUrl": url})
+			
+			except Exception as cobalt_error:
+				print(f"Cobalt API failed: {cobalt_error}")
+
+			# FINAL FALLBACK: Link Only (Iframe)
+			print("All download methods failed. Using fallback link.")
 			return jsonify({
 				"url": url, 
 				"thumbnail": "https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=400", 
@@ -863,6 +884,57 @@ def create_app():
 	@app.route("/static/reels/<path:filename>")
 	def serve_reel(filename):
 		return send_from_directory(STATIC_REELS_DIR, filename)
+
+	@app.route("/api/<resource>", methods=["POST", "GET"])
+	def api_collection(resource):
+		mapped = resource_map.get(resource)
+		if not mapped:
+			return jsonify({"error": "Unknown resource"}), 404
+		data = read_content()
+		if request.method == "GET":
+			return jsonify({mapped: data.get(mapped, [])})
+		# POST -> create (protected)
+		auth = token_required(lambda: None)
+		resp = auth()
+		if isinstance(resp, tuple) and resp[1] >= 400:
+			return resp
+		payload = request.get_json() or {}
+		items = data.get(mapped, [])
+		# assign id
+		max_id = max([it.get("id", 0) for it in items], default=0)
+		payload["id"] = max_id + 1
+		items.append(payload)
+		data[mapped] = items
+		write_content(data)
+		return jsonify(payload), 201
+
+	@app.route("/api/<resource>/<int:item_id>", methods=["PUT", "DELETE"]) 
+	def api_item(resource, item_id):
+		mapped = resource_map.get(resource)
+		if not mapped:
+			return jsonify({"error": "Unknown resource"}), 404
+		# Protected
+		auth = token_required(lambda: None)
+		resp = auth()
+		if isinstance(resp, tuple) and resp[1] >= 400:
+			return resp
+		data = read_content()
+		items = data.get(mapped, [])
+		idx = find_item_by_id(items, item_id)
+		if idx is None:
+			return jsonify({"error": "Not found"}), 404
+		if request.method == "DELETE":
+			items.pop(idx)
+			data[mapped] = items
+			write_content(data)
+			return jsonify({"ok": True})
+		# PUT -> update
+		payload = request.get_json() or {}
+		payload["id"] = item_id
+		items[idx] = payload
+		data[mapped] = items
+		write_content(data)
+		return jsonify(payload)
 
 	return app
 
