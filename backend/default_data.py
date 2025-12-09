@@ -47,9 +47,5 @@ DEFAULT_DATA = {
     { "id": 4, "title": "Product Launch", "category": "Commercial", "image": "https://images.unsplash.com/photo-1505373877841-8d43f703fb1e?q=80&w=800&auto=format&fit=crop", "className": "md:col-span-1 md:row-span-1 min-h-[250px]" },
     { "id": 5, "title": "Private Dining", "category": "Intimate", "image": "https://images.unsplash.com/photo-1514933651103-005eec06c04b?q=80&w=800&auto=format&fit=crop", "className": "md:col-span-1 md:row-span-1 min-h-[250px]" }
   ],
-  "reels": [
-    { "id": 1, "embedUrl": "https://www.instagram.com/reel/C8qXqX_SwY_/?utm_source=ig_embed&utm_campaign=loading", "thumbnail": "https://images.unsplash.com/photo-1514525253440-b3933365609b?q=80&w=400", "caption": "Birthday Bash", "category": "INDOOR" },
-    { "id": 2, "embedUrl": "https://www.instagram.com/reel/C9A_yB_yKxK/?utm_source=ig_embed&utm_campaign=loading", "thumbnail": "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=400", "caption": "Dance Floor", "category": "INDOOR" },
-    { "id": 3, "embedUrl": "https://www.instagram.com/reel/C_d8s9dS9kL/?utm_source=ig_embed&utm_campaign=loading", "thumbnail": "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=400", "caption": "Celebration", "category": "INDOOR" }
-  ]
+  "reels": []
 }
