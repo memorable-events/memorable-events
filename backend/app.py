@@ -511,9 +511,58 @@ def create_app():
 		"indoor-plans": "indoorPlans",
 		"outdoor-plans": "outdoorPlans",
 		"cakes": "cakes",
-		"gallery": "galleryItems",
-		"reels": "reels"
+		"gallery": "galleryItems"
+		# "reels" REMOVED from generic map to prevent auto-seed issues
 	}
+
+	# ===== Dedicated Reels API (To fix persistence issues) =====
+	@app.route("/api/reels", methods=["GET"])
+	def get_reels():
+		print("DEBUG: Fetching reels specifically")
+		data = read_content()
+		# Return empty list if key missing, DO NOT AUTO-SEED from defaults here
+		return jsonify({"reels": data.get("reels", [])})
+
+	@app.route("/api/reels", methods=["POST"])
+	@token_required
+	def create_reel():
+		print("DEBUG: Creating new reel")
+		payload = request.get_json() or {}
+		data = read_content()
+		
+		# Ensure 'reels' key exists
+		if "reels" not in data:
+			data["reels"] = []
+			
+		items = data["reels"]
+		# Robust ID generation
+		max_id = max([it.get("id", 0) for it in items], default=0)
+		payload["id"] = max_id + 1
+		
+		items.append(payload)
+		data["reels"] = items
+		write_content(data)
+		
+		return jsonify(payload), 201
+
+	@app.route("/api/reels/<int:reel_id>", methods=["DELETE"])
+	@token_required
+	def delete_reel(reel_id):
+		print(f"DEBUG: Deleting reel {reel_id}")
+		data = read_content()
+		items = data.get("reels", [])
+		
+		initial_len = len(items)
+		# Filter out the item
+		items = [it for it in items if str(it.get("id")) != str(reel_id)]
+		
+		if len(items) == initial_len:
+			return jsonify({"error": "Reel not found"}), 404
+			
+		data["reels"] = items
+		write_content(data)
+		return jsonify({"ok": True})
+
 
 	@app.route("/api/content", methods=["GET"])
 	def api_get_content():
