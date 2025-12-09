@@ -842,8 +842,14 @@ def create_app():
 			return jsonify({"url": cloudinary_url, "thumbnail": thumbnail_url, "embedUrl": url})
 
 		except Exception as e:
-			print(f"Download/Upload error: {e}")
-			return jsonify({"error": f"Failed to process reel: {str(e)}"}), 500
+			print(f"Download/Upload error (falling back to link): {e}")
+			# FALLBACK: Return success but with original URL so frontend uses Iframe
+			return jsonify({
+				"url": url, 
+				"thumbnail": "https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=400", 
+				"embedUrl": url,
+				"fallback": True
+			})
 
 	@app.route("/static/reels/<path:filename>")
 	def serve_reel(filename):
