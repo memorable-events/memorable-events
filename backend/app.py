@@ -484,10 +484,10 @@ def create_app():
 			except json.JSONDecodeError:
 				data = {}
 		
-		# Auto-seed if empty
+		# Auto-seed ONLY if key is missing completely
 		needs_save = False
 		for key, default_items in DEFAULT_DATA.items():
-			if key not in data or not data[key]:
+			if key not in data:
 				data[key] = default_items
 				needs_save = True
 		

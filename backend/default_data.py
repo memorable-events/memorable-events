@@ -50,9 +50,6 @@ DEFAULT_DATA = {
   "reels": [
     { "id": 1, "embedUrl": "https://www.instagram.com/reel/C8qXqX_SwY_/?utm_source=ig_embed&utm_campaign=loading", "thumbnail": "https://images.unsplash.com/photo-1514525253440-b3933365609b?q=80&w=400", "caption": "Birthday Bash", "category": "INDOOR" },
     { "id": 2, "embedUrl": "https://www.instagram.com/reel/C9A_yB_yKxK/?utm_source=ig_embed&utm_campaign=loading", "thumbnail": "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=400", "caption": "Dance Floor", "category": "INDOOR" },
-    { "id": 3, "embedUrl": "https://www.instagram.com/reel/C_d8s9dS9kL/?utm_source=ig_embed&utm_campaign=loading", "thumbnail": "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=400", "caption": "Celebration", "category": "INDOOR" },
-    { "id": 4, "embedUrl": "https://www.instagram.com/reel/C8_z9z_z9z9/?utm_source=ig_embed&utm_campaign=loading", "thumbnail": "https://images.unsplash.com/photo-1519225448526-0cbc99b4114d?q=80&w=400", "caption": "Outdoor Setup", "category": "OUTDOOR" },
-    { "id": 5, "embedUrl": "https://www.instagram.com/reel/C7_y8y_y8y8/?utm_source=ig_embed&utm_campaign=loading", "thumbnail": "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=400", "caption": "Wedding", "category": "OUTDOOR" },
-    { "id": 6, "embedUrl": "https://www.instagram.com/reel/C6_x7x_x7x7/?utm_source=ig_embed&utm_campaign=loading", "thumbnail": "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=400", "caption": "Evening", "category": "OUTDOOR" }
+    { "id": 3, "embedUrl": "https://www.instagram.com/reel/C_d8s9dS9kL/?utm_source=ig_embed&utm_campaign=loading", "thumbnail": "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=400", "caption": "Celebration", "category": "INDOOR" }
   ]
 }

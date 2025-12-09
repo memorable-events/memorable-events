@@ -557,7 +557,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose, content, actio
                         <div className="bg-zinc-900/50 p-6 rounded-2xl border border-white/5">
                             <div className="flex justify-between items-center mb-4">
                                 <h4 className="font-bold text-zinc-300 uppercase tracking-wider">Instagram Reels</h4>
-                                <button onClick={() => handleCreateStart('reels')} className="p-2 bg-green-600/20 text-green-400 rounded-full hover:bg-green-600/40"><Plus size={16} /></button>
+                                {content.reels.length < 3 && (
+                                    <button onClick={() => handleCreateStart('reels')} className="p-2 bg-green-600/20 text-green-400 rounded-full hover:bg-green-600/40"><Plus size={16} /></button>
+                                )}
                             </div>
                             <div className="space-y-2">
                                 {content.reels.map(item => (
