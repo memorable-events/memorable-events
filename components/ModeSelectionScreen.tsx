@@ -31,7 +31,7 @@ const ModeSelectionScreen: React.FC<ModeSelectionScreenProps> = ({ onSelect }) =
         <div className="absolute inset-0 flex flex-col items-center justify-center p-8 z-10 text-center">
           {/* Logo */}
           {/* Logo */}
-          <div className={`mb-6 h-56 md:h-72 flex items-center justify-center transition-all duration-500 ${hovered === 'INDOOR' ? 'scale-110 brightness-100' : 'scale-100 brightness-75 grayscale'}`}>
+          <div className={`mb-6 h-56 md:h-72 flex items-center justify-center transition-all duration-500 ${hovered === 'INDOOR' ? 'scale-110' : 'scale-100'}`}>
             <img src={indoorLogo} alt="Memorable Party Zone" className="h-full w-full object-contain drop-shadow-2xl" />
           </div>
 
@@ -68,7 +68,7 @@ const ModeSelectionScreen: React.FC<ModeSelectionScreenProps> = ({ onSelect }) =
         {/* Content */}
         <div className="absolute inset-0 flex flex-col items-center justify-center p-8 z-10 text-center">
           {/* Logo */}
-          <div className={`mb-6 h-56 md:h-72 flex items-center justify-center transition-all duration-500 ${hovered === 'OUTDOOR' ? 'scale-110 brightness-100' : 'scale-100 brightness-75 grayscale'}`}>
+          <div className={`mb-6 h-56 md:h-72 flex items-center justify-center transition-all duration-500 ${hovered === 'OUTDOOR' ? 'scale-110' : 'scale-100'}`}>
             <img src={outdoorLogo} alt="Memorable Events 4U" className="h-full w-full object-contain drop-shadow-2xl" />
           </div>
 
