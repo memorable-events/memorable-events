@@ -245,14 +245,21 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose, content, actio
                                         <option value="quantity">Quantity (Countable)</option>
                                     </select>
                                 ) : key === 'embedUrl' && resource === 'reels' ? (
-                                    <input
-                                        type="text"
-                                        name={key}
-                                        value={formData[key] || ''}
-                                        onChange={handleReelLinkPaste}
-                                        className="w-full bg-zinc-800 border border-zinc-700 p-2 rounded text-sm text-white focus:outline-none focus:border-yellow-500"
-                                        placeholder="Paste Instagram Reel Link here..."
-                                    />
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            name={key}
+                                            value={formData[key] || ''}
+                                            onChange={handleReelLinkPaste}
+                                            className="w-full bg-zinc-800 border border-zinc-700 p-2 rounded text-sm text-white focus:outline-none focus:border-yellow-500 pr-10"
+                                            placeholder="Paste Instagram Reel Link here..."
+                                        />
+                                        {uploading && (
+                                            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                                <Loader size={16} className="text-yellow-500 animate-spin" />
+                                            </div>
+                                        )}
+                                    </div>
                                 ) : (
                                     <input
                                         type="text"
