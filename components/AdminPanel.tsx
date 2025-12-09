@@ -573,7 +573,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose, content, actio
                                         </div>
                                         <div className="flex gap-2">
                                             <button onClick={() => handleEdit('reels', item)} className="p-2 text-blue-400 hover:bg-blue-400/10 rounded"><Edit size={14} /></button>
-                                            <button onClick={() => actions.onDelete('reels', item.id)} className="p-2 text-red-400 hover:bg-red-400/10 rounded"><Trash2 size={14} /></button>
+                                            <button onClick={async () => {
+                                                if (!confirm("Are you sure you want to delete this reel?")) return;
+                                                try {
+                                                    await actions.onDelete('reels', item.id);
+                                                } catch (e: any) {
+                                                    alert(e.message);
+                                                }
+                                            }} className="p-2 text-red-400 hover:bg-red-400/10 rounded"><Trash2 size={14} /></button>
                                         </div>
                                     </div>
                                 ))}

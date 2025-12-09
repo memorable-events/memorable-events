@@ -70,7 +70,16 @@ export const api = {
         if (!response.ok) {
             const text = await response.text().catch(() => 'no body');
             console.error('deleteItem error', { resource, id, status: response.status, body: text });
-            throw new Error(`Failed to delete ${resource}: ${response.status}`);
+            // Try to parse JSON error
+            let msg = `Failed to delete ${resource}: ${response.status}`;
+            try {
+                const json = JSON.parse(text);
+                if (json.error) msg = json.error;
+                else if (json.message) msg = json.message;
+            } catch (e) {
+                msg += ` - ${text.substring(0, 50)}`;
+            }
+            throw new Error(msg);
         }
         return true;
     },
