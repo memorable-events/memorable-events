@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { X, Check } from 'lucide-react';
+import { X, Check, Maximize2 } from 'lucide-react';
 import { Service, SetupImage, Plan } from '../types';
 
 interface DecorationModalProps {
@@ -14,6 +14,7 @@ interface DecorationModalProps {
 
 const DecorationModal: React.FC<DecorationModalProps> = ({ isOpen, onClose, decoration, setupImages, plans, onPlanSelect }) => {
   const [selectedSetup, setSelectedSetup] = React.useState<SetupImage | null>(null);
+  const [fullScreenItem, setFullScreenItem] = React.useState<SetupImage | null>(null);
 
   if (!isOpen || !decoration) return null;
 
@@ -65,6 +66,18 @@ const DecorationModal: React.FC<DecorationModalProps> = ({ isOpen, onClose, deco
                         )}
                       </div>
                     </div>
+
+                    {/* Maximize Button */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setFullScreenItem(item);
+                      }}
+                      className="absolute top-2 right-2 p-2 bg-black/50 hover:bg-black/70 rounded-full text-white backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="View Full Screen"
+                    >
+                      <Maximize2 size={16} />
+                    </button>
                   </div>
                 </div>
               ))}
@@ -107,6 +120,39 @@ const DecorationModal: React.FC<DecorationModalProps> = ({ isOpen, onClose, deco
           </div>
         </div>
       </div>
+
+      {/* Full Screen Overlay */}
+      {fullScreenItem && (
+        <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4 animate-fade-in">
+          <button
+            onClick={() => setFullScreenItem(null)}
+            className="fixed top-8 right-8 z-[110] w-12 h-12 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors border border-white/5"
+          >
+            <X size={24} />
+          </button>
+
+          <div className="max-w-[90vw] max-h-[90vh] relative">
+            {fullScreenItem.src.match(/\.(mp4|webm)$/i) ? (
+              <video
+                src={fullScreenItem.src}
+                className="max-w-full max-h-[85vh] rounded-lg shadow-2xl"
+                controls
+                autoPlay
+              />
+            ) : (
+              <img
+                src={fullScreenItem.src}
+                alt={fullScreenItem.title}
+                className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
+              />
+            )}
+            <div className="mt-4 text-center">
+              <h3 className="text-2xl font-serif text-white">{fullScreenItem.title}</h3>
+              {fullScreenItem.price && <p className="text-brand-secondary font-bold text-lg">{fullScreenItem.price}</p>}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
