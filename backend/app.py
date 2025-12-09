@@ -545,6 +545,15 @@ def create_app():
 		
 		return jsonify(payload), 201
 
+	@app.route("/api/reels/<int:reel_id>", methods=["GET"])
+	def get_single_reel(reel_id):
+		data = read_content()
+		items = data.get("reels", [])
+		idx = find_item_by_id(items, reel_id)
+		if idx is None:
+			return jsonify({"error": "Reel not found"}), 404
+		return jsonify(items[idx])
+
 	@app.route("/api/reels/<int:reel_id>", methods=["DELETE"])
 	@token_required
 	def delete_reel(reel_id):
