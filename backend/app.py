@@ -564,6 +564,25 @@ def create_app():
 		return jsonify({"ok": True})
 
 
+	@app.route("/api/reels/<int:reel_id>", methods=["PUT"])
+	@token_required
+	def update_reel(reel_id):
+		print(f"DEBUG: Updating reel {reel_id}")
+		data = read_content()
+		items = data.get("reels", [])
+		
+		idx = find_item_by_id(items, reel_id)
+		if idx is None:
+			return jsonify({"error": "Reel not found"}), 404
+			
+		payload = request.get_json() or {}
+		payload["id"] = reel_id # Ensure ID is preserved
+		items[idx] = payload
+		
+		data["reels"] = items
+		write_content(data)
+		return jsonify(payload)
+
 	@app.route("/api/content", methods=["GET"])
 	def api_get_content():
 		return jsonify(read_content())

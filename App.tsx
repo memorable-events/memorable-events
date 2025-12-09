@@ -83,18 +83,20 @@ function App() {
         if (content.settings) setSettings(content.settings);
         if (content.addons && content.addons.length > 0) setAddons(content.addons);
 
-        if (content.reels && content.reels.length > 0) {
+        if (content.settings) setSettings(content.settings);
+        if (content.addons && content.addons.length > 0) setAddons(content.addons);
+
+        // For reels, we now strictly trust the backend. If it returns [], we show [].
+        // This prevents "Zombie Reels" from defaults appearing after deletion.
+        if (content.reels) {
           setReels(content.reels);
         } else {
-          // Flatten default reels data if backend is empty
-          const defaultReels = [...(REAL_REELS_DATA.INDOOR || []), ...(REAL_REELS_DATA.OUTDOOR || [])].map(r => ({
-            ...r,
-            category: (REAL_REELS_DATA.INDOOR?.find(ir => ir.id === r.id) ? 'INDOOR' : 'OUTDOOR') as 'INDOOR' | 'OUTDOOR'
-          }));
-          setReels(defaultReels);
+          setReels([]);
         }
       } catch (error) {
-        console.log("Backend not connected or empty, using default data.");
+        console.log("Backend not connected, using default data.");
+        // Only use defaults if connection FAILED completely
+        // ... (existing default fallback logic for connection error) ...
         // Flatten default reels data if backend fails
         const defaultReels = [...(REAL_REELS_DATA.INDOOR || []), ...(REAL_REELS_DATA.OUTDOOR || [])].map(r => ({
           ...r,
