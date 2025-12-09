@@ -164,7 +164,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose, content, actio
                         }
                     } catch (err) {
                         console.error("Failed to fetch reel video", err);
-                        alert("Could not download reel video. Autoplay might not work.");
+                        // Fallback is already set, just notify if needed or stay silent
+                        // alert("Could not auto-download video. Using fallback link."); 
                     } finally {
                         setUploading(false);
                     }

@@ -73,7 +73,7 @@ const DecorationModal: React.FC<DecorationModalProps> = ({ isOpen, onClose, deco
                         e.stopPropagation();
                         setFullScreenItem(item);
                       }}
-                      className="absolute top-2 right-2 p-2 bg-black/50 hover:bg-black/70 rounded-full text-white backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute top-2 right-2 p-2 bg-black/60 hover:bg-black/80 rounded-full text-white backdrop-blur-sm transition-colors"
                       title="View Full Screen"
                     >
                       <Maximize2 size={16} />
