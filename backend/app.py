@@ -474,6 +474,7 @@ def create_app():
 
 	def read_content():
 		if not os.path.exists(CONTENT_PATH):
+			print("DEBUG: content.json not found, creating from defaults")
 			with open(CONTENT_PATH, "w", encoding="utf-8") as f:
 				json.dump(DEFAULT_DATA, f, ensure_ascii=False, indent=2)
 			return DEFAULT_DATA
@@ -482,12 +483,14 @@ def create_app():
 			try:
 				data = json.load(f)
 			except json.JSONDecodeError:
+				print("DEBUG: content.json corrupted, resetting")
 				data = {}
 		
 		# Auto-seed ONLY if key is missing completely
 		needs_save = False
 		for key, default_items in DEFAULT_DATA.items():
 			if key not in data:
+				print(f"DEBUG: Key '{key}' missing in content.json, auto-seeding")
 				data[key] = default_items
 				needs_save = True
 		
@@ -498,6 +501,7 @@ def create_app():
 		return data
 
 	def write_content(data):
+		print(f"DEBUG: Writing content to {CONTENT_PATH}")
 		with open(CONTENT_PATH, "w", encoding="utf-8") as f:
 			json.dump(data, f, ensure_ascii=False, indent=2)
 
@@ -636,12 +640,11 @@ def create_app():
 			if file.filename == "":
 				return jsonify({"error": "No selected file"}), 400
 
-		# Check if it's a video
-		is_video = file.content_type.startswith('video/')
-		
-		if is_video:
-			# Upload video to Cloudinary using direct Request (Bypassing SDK to force Proxy)
-			try:
+			# Check if it's a video
+			is_video = file.content_type.startswith('video/')
+			
+			if is_video:
+				# Upload video to Cloudinary using direct Request (Bypassing SDK to force Proxy)
 				import time
 				import cloudinary.utils
 				
@@ -650,83 +653,72 @@ def create_app():
 				filepath = os.path.join(STATIC_REELS_DIR, filename)
 				file.save(filepath)
 				
-				# Prepare Direct Upload
-				cloud_name = os.environ.get("CLOUDINARY_CLOUD_NAME")
-				api_key = os.environ.get("CLOUDINARY_API_KEY")
-				api_secret = os.environ.get("CLOUDINARY_API_SECRET")
-				
-				timestamp = int(time.time())
-				params_to_sign = {"timestamp": timestamp}
-				signature = cloudinary.utils.api_sign_request(params_to_sign, api_secret)
-				
-				payload = {
-					"api_key": api_key,
-					"timestamp": timestamp,
-					"signature": signature
-				}
-				
-				# Explicit Proxy for PythonAnywhere
-				proxies = {
-					"http": "http://proxy.server:3128",
-					"https": "http://proxy.server:3128"
-				}
-				
-				print(f"DEBUG: Starting direct upload to Cloudinary for {filename}")
-				
-				with open(filepath, "rb") as f:
-					files = {"file": f}
-					upload_url = f"https://api.cloudinary.com/v1_1/{cloud_name}/video/upload"
+				try:
+					# Prepare Direct Upload
+					cloud_name = os.environ.get("CLOUDINARY_CLOUD_NAME")
+					api_key = os.environ.get("CLOUDINARY_API_KEY")
+					api_secret = os.environ.get("CLOUDINARY_API_SECRET")
 					
-					# Force proxy usage
-					resp = requests.post(upload_url, data=payload, files=files, proxies=proxies, timeout=600)
+					timestamp = int(time.time())
+					params_to_sign = {"timestamp": timestamp}
+					signature = cloudinary.utils.api_sign_request(params_to_sign, api_secret)
 					
-				if resp.status_code != 200:
-					print(f"Cloudinary Direct Upload Failed: {resp.text}")
+					payload = {
+						"api_key": api_key,
+						"timestamp": timestamp,
+						"signature": signature
+					}
+					
+					# Explicit Proxy for PythonAnywhere
+					proxies = {
+						"http": "http://proxy.server:3128",
+						"https": "http://proxy.server:3128"
+					}
+					
+					print(f"DEBUG: Starting direct upload to Cloudinary for {filename}")
+					
+					with open(filepath, "rb") as f:
+						files = {"file": f}
+						upload_url = f"https://api.cloudinary.com/v1_1/{cloud_name}/video/upload"
+						
+						# Force proxy usage
+						resp = requests.post(upload_url, data=payload, files=files, proxies=proxies, timeout=600)
+						
+					if resp.status_code != 200:
+						print(f"Cloudinary Direct Upload Failed: {resp.text}")
+						return jsonify({"error": f"Cloudinary Upload Failed: {resp.text}"}), 500
+						
+					result = resp.json()
+					cloudinary_url = result.get("secure_url")
+					return jsonify({"url": cloudinary_url})
+
+				finally:
+					# Clean up
 					if os.path.exists(filepath):
 						os.remove(filepath)
-					return jsonify({"error": f"Cloudinary Upload Failed: {resp.text}"}), 500
-					
+
+			else:
+				# Image upload (ImgBB)
+				api_key = os.environ.get("IMGBB_API_KEY")
+				if not api_key:
+					return jsonify({"error": "Server configuration error: Missing IMGBB_API_KEY"}), 500
+
+				# ImgBB API expects 'image' field
+				files = {"image": (file.filename, file.read(), file.content_type)}
+				params = {"key": api_key}
+				resp = requests.post("https://api.imgbb.com/1/upload", files=files, params=params)
+				
+				if resp.status_code != 200:
+					print(f"ImgBB Error: {resp.text}")
+					return jsonify({"error": f"Failed to upload to external provider: {resp.text}"}), 502
+				
 				result = resp.json()
-				cloudinary_url = result.get("secure_url")
-				
-				# Clean up
-				if os.path.exists(filepath):
-					os.remove(filepath)
+				if not result.get("success"):
+					return jsonify({"error": "External provider reported failure"}), 502
 					
-				return jsonify({"url": cloudinary_url})
-				
-			except Exception as e:
-				print(f"Cloudinary Upload Error: {e}")
-				# Clean up
-				if os.path.exists(filepath):
-					os.remove(filepath)
-				return jsonify({"error": f"Failed to upload video: {str(e)}"}), 500
+				# Return the direct display URL
+				return jsonify({"url": result["data"]["url"]})
 
-		# Image upload (ImgBB)
-		api_key = os.environ.get("IMGBB_API_KEY")
-		if not api_key:
-			return jsonify({"error": "Server configuration error: Missing IMGBB_API_KEY"}), 500
-
-		try:
-			# ImgBB API expects 'image' field
-			files = {"image": (file.filename, file.read(), file.content_type)}
-			params = {"key": api_key}
-			resp = requests.post("https://api.imgbb.com/1/upload", files=files, params=params)
-			
-			if resp.status_code != 200:
-				print(f"ImgBB Error: {resp.text}")
-				return jsonify({"error": f"Failed to upload to external provider: {resp.text}"}), 502
-			
-			result = resp.json()
-			if not result.get("success"):
-				return jsonify({"error": "External provider reported failure"}), 502
-				
-			# Return the direct display URL
-			return jsonify({"url": result["data"]["url"]})
-		except Exception as e:
-			print(f"Upload exception: {e}")
-			# Return the direct display URL
-			return jsonify({"url": result["data"]["url"]})
 		except Exception as e:
 			print(f"Upload exception: {e}")
 			import traceback

@@ -27,7 +27,7 @@ export const api = {
     },
 
     getContent: async (): Promise<ContentResponse> => {
-        const response = await fetch(`${API_BASE_URL}/content`);
+        const response = await fetch(`${API_BASE_URL}/content?_t=${Date.now()}`);
         if (!response.ok) throw new Error('Failed to fetch content');
         return response.json();
     },
