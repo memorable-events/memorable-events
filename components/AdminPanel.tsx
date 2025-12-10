@@ -154,7 +154,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose, content, actio
                     setUploading(true);
                     try {
                         const result = await api.fetchReel(url);
-                        if (result.url) {
+                        // Case 1: Download Success (url is cloudinary/file)
+                        if (result.url && !result.fallback) {
                             setFormData(prev => ({
                                 ...prev,
                                 embedUrl: result.url,
@@ -162,10 +163,24 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose, content, actio
                                 originalUrl: url
                             }));
                         }
+                        // Case 2: Fallback (Link Only)
+                        else if (result.fallback || result.embedUrl) {
+                            setFormData(prev => ({
+                                ...prev,
+                                embedUrl: result.embedUrl || url, // Use the link as the source
+                                thumbnail: result.thumbnail || prev.thumbnail,
+                                originalUrl: url
+                            }));
+                            // Optional: Show a toast here that it's using link mode
+                        }
                     } catch (err) {
                         console.error("Failed to fetch reel video", err);
-                        // Fallback is already set, just notify if needed or stay silent
-                        // alert("Could not auto-download video. Using fallback link."); 
+                        // API Error? Just use the link we have
+                        setFormData(prev => ({
+                            ...prev,
+                            embedUrl: url,
+                            originalUrl: url
+                        }));
                     } finally {
                         setUploading(false);
                     }

@@ -7,7 +7,6 @@ from flask import Flask, request, jsonify, g
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 import jwt
-import yt_dlp
 import uuid
 import requests
 import re
@@ -799,87 +798,62 @@ def create_app():
 		if not url:
 			return jsonify({"error": "URL is required"}), 400
 
+		# Clean URL (remove query params) to improve success rate
+		clean_url = url.split("?")[0]
+		print(f"DEBUG: Cleaned URL: {clean_url}")
+
+		# METHOD 1: Cobalt API (Primary - Best for Server Environments)
 		try:
-			# Generate a unique filename
-			filename = f"{uuid.uuid4()}.mp4"
-			filepath = os.path.join(STATIC_REELS_DIR, filename)
-
-			ydl_opts = {
-				'outtmpl': filepath,
-				'format': 'best[ext=mp4]/best',  # Prefer mp4
-				'quiet': True,
-				'no_warnings': True,
+			print(f"DEBUG: Attempting Cobalt API for {clean_url}")
+			headers = {
+				"Accept": "application/json",
+				"Content-Type": "application/json",
+				"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
 			}
-
-			with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-				ydl.download([url])
-
-			# Upload to Cloudinary
-			upload_result = cloudinary.uploader.upload(filepath, resource_type="video")
-			cloudinary_url = upload_result.get("secure_url")
+			cobalt_payload = {"url": clean_url}
+			cobalt_resp = requests.post("https://api.cobalt.tools/api/json", json=cobalt_payload, headers=headers, timeout=15)
 			
-			# Generate thumbnail URL (replace extension with .jpg)
-			thumbnail_url = cloudinary_url.rsplit('.', 1)[0] + '.jpg'
-
-			# Clean up local file
-			if os.path.exists(filepath):
-				os.remove(filepath)
-
-			return jsonify({"url": cloudinary_url, "thumbnail": thumbnail_url, "embedUrl": url})
-
-		except Exception as e:
-			print(f"yt-dlp failed: {e}. Trying Cobalt API...")
-			
-			try:
-				# ALTERNATIVE API: Cobalt (Free, No Key)
-				headers = {
-					"Accept": "application/json",
-					"Content-Type": "application/json",
-					"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-				}
-				cobalt_payload = {"url": url}
-				# Try primary and backup instances if needed
-				cobalt_resp = requests.post("https://api.cobalt.tools/api/json", json=cobalt_payload, headers=headers, timeout=15)
+			if cobalt_resp.status_code == 200:
+				c_data = cobalt_resp.json()
+				download_link = c_data.get("url")
 				
-				if cobalt_resp.status_code == 200:
-					c_data = cobalt_resp.json()
-					download_link = c_data.get("url")
+				if download_link:
+					print(f"DEBUG: Cobalt success. Downloading video...")
+					c_video = requests.get(download_link, stream=True)
 					
-					if download_link:
-						print(f"Cobalt success. Downloading from: {download_link}")
-						# Download the video from Cobalt
-						c_video = requests.get(download_link, stream=True)
-						
-						# Save to temp file
-						filename = f"{uuid.uuid4()}_cobalt.mp4"
-						filepath = os.path.join(STATIC_REELS_DIR, filename)
-						
-						with open(filepath, 'wb') as f:
-							for chunk in c_video.iter_content(chunk_size=8192):
-								f.write(chunk)
-								
-						# Upload to Cloudinary
-						upload_result = cloudinary.uploader.upload(filepath, resource_type="video")
-						cloudinary_url = upload_result.get("secure_url")
-						thumbnail_url = cloudinary_url.rsplit('.', 1)[0] + '.jpg'
-						
-						# Clean up
-						if os.path.exists(filepath):
-							os.remove(filepath)
+					filename = f"{uuid.uuid4()}_cobalt.mp4"
+					filepath = os.path.join(STATIC_REELS_DIR, filename)
+					
+					with open(filepath, 'wb') as f:
+						for chunk in c_video.iter_content(chunk_size=8192):
+							f.write(chunk)
 							
-						return jsonify({"url": cloudinary_url, "thumbnail": thumbnail_url, "embedUrl": url})
-			
-			except Exception as cobalt_error:
-				print(f"Cobalt API failed: {cobalt_error}")
+					# Upload to Cloudinary
+					upload_result = cloudinary.uploader.upload(filepath, resource_type="video")
+					cloudinary_url = upload_result.get("secure_url")
+					thumbnail_url = cloudinary_url.rsplit('.', 1)[0] + '.jpg'
+					
+					if os.path.exists(filepath):
+						os.remove(filepath)
+						
+					return jsonify({"url": cloudinary_url, "thumbnail": thumbnail_url, "embedUrl": url})
+			else:
+				print(f"DEBUG: Cobalt failed {cobalt_resp.status_code}: {cobalt_resp.text}")
+					
+		except Exception as e:
+			print(f"Cobalt API failed: {e}")
 
-			# FINAL FALLBACK: Link Only (Iframe)
-			print("All download methods failed. Using fallback link.")
-			return jsonify({
-				"url": url, 
-				"thumbnail": "https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=400", 
-				"embedUrl": url,
-				"fallback": True
-			})
+		# METHOD 2: yt-dlp REMOVED (Caused rate-limit errors and delay on PythonAnywhere)
+		# If Cobalt fails, we go straight to Link Fallback (Client-side Embed).
+
+		# FINAL FALLBACK: Link Only (Iframe)
+		print("DEBUG: Download failed. Using fallback link.")
+		return jsonify({
+			"url": url, 
+			"thumbnail": "https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=400", 
+			"embedUrl": url,
+			"fallback": True
+		})
 
 	@app.route("/static/reels/<path:filename>")
 	def serve_reel(filename):
