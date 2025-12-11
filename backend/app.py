@@ -467,7 +467,16 @@ def create_app():
 	# ===== Generic API for frontend admin =====
 	import json
 
-	from default_data import DEFAULT_DATA
+	try:
+		from backend.default_data import DEFAULT_DATA
+	except ImportError:
+		try:
+			from default_data import DEFAULT_DATA
+		except ImportError:
+			# Last resort: try looking in current dir
+			import sys
+			sys.path.append(os.path.dirname(__file__))
+			from default_data import DEFAULT_DATA
 
 	CONTENT_PATH = os.path.join(BASE_DIR, "content.json")
 
