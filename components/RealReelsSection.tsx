@@ -85,7 +85,7 @@ const RealReelsSection: React.FC<RealReelsSectionProps> = ({ mode, reels }) => {
               </>
             ) : (
               <iframe
-                src={`${activeReel.embedUrl.split('?')[0].replace(/\/$/, '')}/embed/captioned/?autoplay=1&muted=1&playsinline=1`}
+                src={`${activeReel.embedUrl.split('?')[0].replace(/\/$/, '')}/embed/?autoplay=1&muted=1`}
                 className="w-full aspect-[9/16]"
                 frameBorder="0"
                 scrolling="no"
