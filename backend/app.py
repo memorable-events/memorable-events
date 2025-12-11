@@ -849,9 +849,9 @@ def create_app():
 		# FINAL FALLBACK: Link Only (Iframe)
 		print("DEBUG: Download failed. Using fallback link.")
 		return jsonify({
-			"url": clean_url, 
+			"url": url, 
 			"thumbnail": "https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=400", 
-			"embedUrl": clean_url,
+			"embedUrl": url,
 			"fallback": True
 		})
 
