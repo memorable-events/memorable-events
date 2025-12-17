@@ -151,7 +151,8 @@ export const api = {
         const url = date ? `${API_BASE_URL}/bookings?date=${date}` : `${API_BASE_URL}/bookings`;
         const response = await fetch(url);
         if (!response.ok) throw new Error('Failed to fetch bookings');
-        return response.json();
+        const data = await response.json();
+        return data.bookings || [];
     },
 
     createBooking: async (date: string, time_slot: string) => {

@@ -146,6 +146,7 @@ function App() {
   };
 
   // CRUD Handlers passed to AdminPanel
+  // CRUD Handlers passed to AdminPanel
   const handleCreateItem = async (resource: string, item: any) => {
     try {
       const newItem = await api.createItem(resource, item);
@@ -160,9 +161,9 @@ function App() {
         case 'reels': setReels([...reels, newItem]); break;
         case 'addons': setAddons([...addons, newItem]); break;
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error("Create failed", e);
-      alert("Failed to create item. Ensure backend is running.");
+      alert(`Failed to create item: ${e.message}`);
     }
   };
 
@@ -181,9 +182,9 @@ function App() {
         case 'reels': setReels(updateList(reels)); break;
         case 'addons': setAddons(updateList(addons)); break;
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error("Update failed", e);
-      alert("Failed to update item");
+      alert(`Failed to update item: ${e.message}`);
     }
   };
 
@@ -202,14 +203,11 @@ function App() {
         case 'reels': setReels(filterList(reels)); break;
         case 'addons': setAddons(filterList(addons)); break;
       }
-    } catch (e) {
-      console.error("Delete failed", e);
     } catch (e: any) {
       console.error("Delete failed", e);
-      alert(e.message || "Failed to delete item");
+      alert(`Failed to delete item: ${e.message}`);
     }
-  }
-};
+  };
 
 const handleUpdateSettings = async (newSettings: any) => {
   try {

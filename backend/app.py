@@ -519,7 +519,9 @@ def create_app():
 		"indoor-plans": "indoorPlans",
 		"outdoor-plans": "outdoorPlans",
 		"cakes": "cakes",
-		"gallery": "galleryItems"
+		"gallery": "galleryItems",
+		"addons": "addons",
+		"bookings": "bookings"
 		# "reels" REMOVED from generic map to prevent auto-seed issues
 	}
 
@@ -875,7 +877,15 @@ def create_app():
 			return jsonify({"error": "Unknown resource"}), 404
 		data = read_content()
 		if request.method == "GET":
-			return jsonify({mapped: data.get(mapped, [])})
+			items = data.get(mapped, [])
+			# Generic filtering support (e.g. ?date=2023-10-27)
+			args = request.args
+			if args:
+				items = [
+					item for item in items 
+					if all(str(item.get(k)) == v for k, v in args.items())
+				]
+			return jsonify({mapped: items})
 		# POST -> create (protected)
 		auth = token_required(lambda: None)
 		resp = auth()
